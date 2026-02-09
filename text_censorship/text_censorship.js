@@ -19,8 +19,11 @@ module.exports = (client) => {
 
     const filter = getFilter();
     let content = message.content;
-    const cleanText = content.replace(/[\s\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, "");
-    
+    const cleanText = content.replace(
+      /[\s\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g,
+      "",
+    );
+
     let isModified = false;
     let finalContent = content;
 
@@ -29,7 +32,7 @@ module.exports = (client) => {
         if (content.includes(badWord) || cleanText.includes(badWord)) {
           const escapeWord = badWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
           const regex = new RegExp(escapeWord, "g");
-          
+
           finalContent = finalContent.replace(regex, replacement);
           isModified = true;
         }
@@ -43,17 +46,16 @@ module.exports = (client) => {
         }
 
         const filterEmbed = new EmbedBuilder()
-          .setColor(0x00FF7F)
+          .setColor(0x00ff7f)
           .setTitle("검열 딱!")
-          .setDescription(finalContent)
-          .setAuthor({ 
-            name: message.author.username, 
-            iconURL: message.author.displayAvatarURL() 
+          .setAuthor({
+            name: message.author.username,
+            iconURL: message.author.displayAvatarURL(),
           })
+          .setDescription(`### ${finalContent}`)
           .setTimestamp();
 
         await message.channel.send({ embeds: [filterEmbed] });
-
       } catch (err) {
         console.error("Failed to process message : ", err);
       }
