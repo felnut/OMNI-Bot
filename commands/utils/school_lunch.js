@@ -8,7 +8,7 @@ module.exports = {
     .addNumberOption((Option) =>
       Option.setName("year")
         .setDescription(
-          "년도를 입력해주세요.(입력하지 않으면 현재 년도로 입력됩니다.",
+          "년도를 입력해주세요.(입력하지 않으면 현재 년도로 입력됩니다.)",
         )
         .setRequired(false),
     )
