@@ -4,9 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-    client.commands = new Collection();
+/** @type {import('discord.js').Collection<string, any>} */
+client.commands = new Collection();
 
-const foldersPath = path.join(__dirname, 'commands');
+const foldersPath = path.join(__dirname, 'bot/commands');
 const commandFolders = fs.readdirSync(foldersPath);
 
 for (const folder of commandFolders) {
@@ -23,7 +24,7 @@ for (const folder of commandFolders) {
 }
 
 // initialize text censorship handlers
-require('./text_censorship/text_censorship.js')(client);
+require('./bot/text_censorship/text_censorship.js')(client);
 
 client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
