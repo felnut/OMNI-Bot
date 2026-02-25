@@ -31,7 +31,7 @@ module.exports = {
     const amounts = Array.from({ length: 100 }, (_, i) => 500 * (i + 1));
 
     // 확률 설정 (금액 낮을수록 확률 높음)
-    const weights = amounts.map((a) => Math.pow(55000 / a, 1.7));
+    const weights = amounts.map((a) => Math.pow(55000 / a, 1.87));
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);
 
     // 가중치 적용해서 랜덤 만들기
