@@ -12,21 +12,32 @@ module.exports = {
     .setDescription("출석하고 돈 받자! (매일 밤 12시 갱신)"),
 
   async execute(interaction) {
+    await interaction.deferReply({ ephemeral: false });
+
     const userId = interaction.user.id;
 
-    // 현재 한국 시간 계산
+    // 한국 시간으로 오늘 00:00 계산
     const now = new Date();
     const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-
-    // 오늘 날짜의 시작 시간 (00:00:00) 타임스탬프 (초 단위)
     const todayStart = new Date(kstNow);
     todayStart.setUTCHours(0, 0, 0, 0);
     const todayResetTimeSec = Math.floor(todayStart.getTime() / 1000);
 
-    const user = getUserOrFail(interaction, 0);
-    if (!user) return;
+    let user;
+    try {
+      user = getUserOrFail(interaction, 0); // 가입 + 잔액 체크
+    } catch (err) {
+      if (err.message === "NOT_REGISTERED") {
+        return interaction.editReply({
+          content:
+            "아직 돈 시스템에 가입 안 했어.\n먼저 `/돈` 쳐서 지갑 만들어!",
+          ephemeral: true,
+        });
+      }
+      return;
+    }
 
-    // DB에 저장된 마지막 리셋 시간이 오늘 00:00과 같다면 이미 출석한 것
+    // 이미 오늘 출석했는지 확인
     if (user.daily_last_reset === todayResetTimeSec) {
       const nextResetMs = (todayResetTimeSec + 86400) * 1000;
       const diffMs = nextResetMs - kstNow.getTime();
@@ -34,15 +45,15 @@ module.exports = {
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-      return interaction.reply({
+      return interaction.editReply({
         content: `오늘 이미 출석했어\n다음 출석: **${hours}시간 ${minutes}분** 후`,
         flags: MessageFlags.Ephemeral,
       });
     }
 
+    // 연속 출석 계산 & 보상 지급
     let newStreak = 1;
     const yesterdayResetTimeSec = todayResetTimeSec - 86400;
-
     if (user.daily_last_reset === yesterdayResetTimeSec) {
       newStreak = (user.streak || 0) + 1;
     }
@@ -74,10 +85,8 @@ module.exports = {
         },
         { name: "연속 출석", value: `${newStreak}일째!`, inline: true },
       )
-      .setFooter({
-        text: `매일 밤 12시에 초기화됩니다.`,
-      });
+      .setFooter({ text: `매일 밤 12시에 초기화됩니다.` });
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   },
 };

@@ -1,4 +1,3 @@
-// bot/commands/game/ranking.js
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const db = require("../../../Database");
 
@@ -8,25 +7,19 @@ module.exports = {
     .setDescription("서버에서 제일 돈 많은 사람들 TOP 10 💰"),
 
   async execute(interaction) {
-    // TOP 10 가져오기
+    await interaction.deferReply();
+
+    // TOP 10 조회
     const rankings = db
-      .prepare(
-        `
-        SELECT user_id, money 
-        FROM user 
-        ORDER BY money DESC 
-        LIMIT 10
-      `,
-      )
+      .prepare(`SELECT user_id, money FROM user ORDER BY money DESC LIMIT 10`)
       .all();
 
     if (rankings.length === 0) {
-      return interaction.reply(
+      return interaction.editReply(
         "아직 아무도 돈을 안 벌었네... 출석부터 박아보자 🔥",
       );
     }
 
-    // 랭킹 문자열 만들기
     let desc = "";
     const medals = ["🥇", "🥈", "🥉"];
 
@@ -36,12 +29,12 @@ module.exports = {
     });
 
     const embed = new EmbedBuilder()
-      .setColor(0xffd700) // 금색으로 럭셔리하게
+      .setColor(0xffd700)
       .setTitle("🏆 서버 돈 랭킹 TOP 10")
       .setDescription(desc)
       .setTimestamp();
 
-    // 내 순위 계산 (동률도 정확히 처리)
+    // 내 순위 계산
     const myRow = db
       .prepare("SELECT money FROM user WHERE user_id = ?")
       .get(interaction.user.id);
@@ -50,7 +43,6 @@ module.exports = {
       const richer = db
         .prepare("SELECT COUNT(*) as cnt FROM user WHERE money > ?")
         .get(myRow.money).cnt;
-
       const myRank = richer + 1;
 
       embed.addFields({
@@ -66,6 +58,6 @@ module.exports = {
       });
     }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   },
 };

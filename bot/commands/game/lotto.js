@@ -15,29 +15,38 @@ module.exports = {
     .setDescription("500원으로 복권을 구매합니다.(꽝 없음)"),
 
   async execute(interaction) {
+    await interaction.deferReply();
+
     const useFee = 500;
 
-    const user = getUserOrFail(interaction, useFee);
-    if (!user) return;
+    let user;
+    try {
+      user = getUserOrFail(interaction, useFee);
+    } catch (err) {
+      let content = "뭔가 잘못됐어 ㅠㅠ";
+      if (err.message === "NOT_REGISTERED")
+        content =
+          "아직 돈 시스템에 가입 안 했어 ㅠㅠ\n먼저 `/돈` 쳐서 지갑 만들어!";
+      else if (err.message === "INSUFFICIENT_MONEY")
+        content = `💸 돈 부족! (500원 필요해~)`;
+      return interaction.editReply({ content, ephemeral: true });
+    }
 
-    // 이용료 차감
+    // 500원 차감
     db.prepare("UPDATE user SET money = money - ? WHERE user_id = ?").run(
       useFee,
       user.user_id,
     );
-    user.money -= useFee; // 로컬 객체도 업데이트 (구매 시점 잔액 표시용)
+    user.money -= useFee;
 
-    // 500원 단위로 당첨금 설정
+    // 당첨금 랜덤 뽑기 (가중치 적용)
     const amounts = Array.from({ length: 100 }, (_, i) => 500 * (i + 1));
-
-    // 확률 설정 (금액 낮을수록 확률 높음)
     const weights = amounts.map((a) => Math.pow(55000 / a, 1.87));
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);
 
-    // 가중치 적용해서 랜덤 만들기
     let rand = Math.random() * totalWeight;
     let sum = 0;
-    let prize = 500; // 기본값 (안전장치)
+    let prize = 500;
 
     for (let i = 0; i < amounts.length; i++) {
       sum += weights[i];
@@ -47,7 +56,7 @@ module.exports = {
       }
     }
 
-    // 구매 완료 임베드
+    // 구매 완료 메시지
     const buyEmbed = new EmbedBuilder()
       .setTitle("🎫 복권 구매 완료!")
       .setColor("#FFD700")
@@ -74,14 +83,11 @@ module.exports = {
         .setStyle(ButtonStyle.Primary),
     );
 
-    await interaction.reply({
-      embeds: [buyEmbed],
-      components: [row],
-    });
+    await interaction.editReply({ embeds: [buyEmbed], components: [row] });
 
     const message = await interaction.fetchReply();
 
-    // 버튼 collector
+    // 버튼 대기
     const filter = (i) => i.user.id === interaction.user.id;
     const collector = message.createMessageComponentCollector({
       filter,
@@ -97,10 +103,7 @@ module.exports = {
         .setColor("#FFAA00")
         .setDescription("두구두구...");
 
-      await message.edit({
-        embeds: [scratchingEmbed],
-        components: [],
-      });
+      await message.edit({ embeds: [scratchingEmbed], components: [] });
 
       await new Promise((resolve) => setTimeout(resolve, 2500));
 
@@ -110,7 +113,6 @@ module.exports = {
         user.user_id,
       );
 
-      // 지급 후 최신 잔액 다시 조회
       const updatedUser = db
         .prepare("SELECT money FROM user WHERE user_id = ?")
         .get(user.user_id);
@@ -126,11 +128,7 @@ module.exports = {
           inline: true,
         });
 
-      await message.edit({
-        embeds: [resultEmbed],
-        components: [],
-      });
-
+      await message.edit({ embeds: [resultEmbed], components: [] });
       collector.stop();
     });
 
@@ -140,7 +138,6 @@ module.exports = {
           useFee,
           user.user_id,
         );
-
         await interaction.editReply({
           content: "시간 초과로 취소되었습니다. 이용료는 반환됩니다.",
           embeds: [],

@@ -18,40 +18,51 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    await interaction.deferReply({ ephemeral: false });
+
     const target = interaction.options.getUser("유저");
     const amount = interaction.options.getInteger("금액");
 
+    // 자기 자신한테 송금 방지
     if (target.id === interaction.user.id) {
-      return interaction.reply({
+      return interaction.editReply({
         content: "자기 자신한테 송금은 안 돼 ㅋㅋㅋ",
         flags: 64,
       });
     }
 
     if (target.bot) {
-      return interaction.reply({
-        content: "봇한테는 돈 못 보내 ㅠㅠ",
+      return interaction.editReply({
+        content: "봇한테는 돈 못 보내 ㅋㅋ",
         flags: 64,
       });
     }
 
-    // 송금자 체크
-    const sender = getUserOrFail(interaction, amount);
-    if (!sender) return;
+    let sender;
+    try {
+      sender = getUserOrFail(interaction, amount); // 송금자 체크
+    } catch (err) {
+      let content = "뭔가 잘못됐어 ㅠㅠ";
+      if (err.message === "NOT_REGISTERED")
+        content =
+          "아직 돈 시스템에 가입 안 했어.\n먼저 `/돈` 쳐서 지갑 만들어!";
+      else if (err.message === "INSUFFICIENT_MONEY")
+        content = `💸 돈 부족! (필요: ${amount.toLocaleString()}원)`;
+      return interaction.editReply({ content, ephemeral: true });
+    }
 
-    // 받는 사람 체크 (가입 안 했으면 메시지만 띄우고 끝)
     let receiver = db
       .prepare("SELECT * FROM user WHERE user_id = ?")
       .get(target.id);
 
     if (!receiver) {
-      return interaction.reply({
+      return interaction.editReply({
         content: `${target} 님은 아직 가입 안 했어.\n상대방이 먼저 "/돈" 쳐야 송금 가능해!`,
         flags: 64,
       });
     }
 
-    // 송금 실행
+    // 실제 송금 실행
     db.prepare("UPDATE user SET money = money - ? WHERE user_id = ?").run(
       amount,
       sender.user_id,
@@ -84,6 +95,6 @@ module.exports = {
       )
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   },
 };

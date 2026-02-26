@@ -25,35 +25,44 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    await interaction.deferReply();
+
     const choice = interaction.options.getString("선택");
     const bet = interaction.options.getInteger("금액");
 
-    const user = getUserOrFail(interaction, bet);
-    if (!user) return;
+    let user;
+    try {
+      user = getUserOrFail(interaction, bet); // 유저 체크
+    } catch (err) {
+      let content = "뭔가 잘못됐어 ㅠㅠ";
+      if (err.message === "NOT_REGISTERED") {
+        content =
+          "아직 돈 시스템에 가입 안 했어.\n먼저 `/돈` 쳐서 지갑 만들어!";
+      } else if (err.message === "INSUFFICIENT_MONEY") {
+        content = `💸 돈 부족! (필요: ${bet.toLocaleString()}원)`;
+      }
+      return interaction.editReply({ content, ephemeral: true });
+    }
 
-    // 게임 로직
+    // 게임 진행
     const resultNum = Math.floor(Math.random() * 10) + 1;
     const result = resultNum % 2 === 0 ? "even" : "odd";
     const resultKor = result === "even" ? "짝" : "홀";
     const playerKor = choice === "even" ? "짝" : "홀";
     const isWin = choice === result;
 
-    // 이기면 배팅액 * 2
     const reward = isWin ? bet * 2 : -bet;
 
-    // db 업데이트
     db.prepare("UPDATE user SET money = money + ? WHERE user_id = ?").run(
       reward,
       user.user_id,
     );
 
-    // 업데이트 후 최신 잔액 다시 조회
     const updatedUser = db
       .prepare("SELECT money FROM user WHERE user_id = ?")
       .get(user.user_id);
     const newBalance = updatedUser.money;
 
-    // 결과 메시지
     const resultEmbed = new EmbedBuilder()
       .setColor(isWin ? 0x57f287 : 0xed4245)
       .setTitle(isWin ? "💰 승리!" : "💸 패배!")
@@ -77,6 +86,6 @@ module.exports = {
         },
       );
 
-    await interaction.reply({ embeds: [resultEmbed] });
+    await interaction.editReply({ embeds: [resultEmbed] });
   },
 };

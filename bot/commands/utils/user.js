@@ -12,33 +12,14 @@ const { MessageFlags } = require("discord.js");
 function getUserOrFail(interaction, requiredAmount = 0) {
   const userId = interaction.user.id;
 
-  // 유저 조회 (없으면 null)
   const user = db.prepare("SELECT * FROM user WHERE user_id = ?").get(userId);
 
   if (!user) {
-    interaction
-      .reply({
-        content:
-          "아직 돈 시스템에 가입 안 했어 ㅠㅠ\n먼저 `/돈` 쳐서 지갑 만들어!",
-        flags: MessageFlags.Ephemeral,
-      })
-      .catch(() => {}); // 이미 응답된 경우 무시
-
-    return null;
+    throw new Error("NOT_REGISTERED");
   }
 
-  // 잔액 체크 (필요한 경우)
   if (requiredAmount > 0 && user.money < requiredAmount) {
-    interaction
-      .reply({
-        content:
-          `💸 돈 부족! (필요: ${requiredAmount.toLocaleString()}원, 현재: ${user.money.toLocaleString()}원)\n` /
-          돈`으로 확인해봐~`,
-        flags: MessageFlags.Ephemeral,
-      })
-      .catch(() => {});
-
-    return null;
+    throw new Error("INSUFFICIENT_MONEY");
   }
 
   return user;
