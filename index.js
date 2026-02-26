@@ -53,7 +53,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     };
     if (interaction.replied || interaction.deferred)
       await interaction.followUp(errorMsg);
-    else await interaction.reply(errorMsg);
+    else await interaction.editReply(errorMsg);
   }
 });
 

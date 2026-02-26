@@ -28,6 +28,7 @@ module.exports = {
     ),
   async execute(interaction) {
     try {
+      await interaction.deferReply();
       const date = new Date();
       const currentYear = date.getFullYear();
       const currentMonth = date.getMonth() + 1;
@@ -90,7 +91,7 @@ module.exports = {
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp("🚨 오류가 발생했습니다.");
       } else {
-        await interaction.reply("🚨 급식을 불러오는 중에 오류가 발생했습니다.");
+        await interaction.editReply("🚨 급식을 불러오는 중에 오류가 발생했습니다.");
       }
     }
   },
