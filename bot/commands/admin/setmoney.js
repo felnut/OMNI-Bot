@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, Message } = require("discord.js");
 const db = require("../../../Database.js");
 
 module.exports = {
@@ -23,7 +23,7 @@ module.exports = {
     if (interaction.user.id !== ownerId) {
       return interaction.reply({
         content: "이 명령어는 봇 주인만 사용할 수 있어요!",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -33,7 +33,7 @@ module.exports = {
     if (!targetUser) {
       return interaction.reply({
         content: "유저를 제대로 선택해주세요!",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -57,7 +57,7 @@ module.exports = {
 
     await interaction.reply({
       content: `${targetUser}님의 돈을 **${amount.toLocaleString()}원**으로 설정했어요!`,
-      ephemeral: false,
+      flags: MessageFlags.Ephemeral,
     });
 
     // 로그로 남기기 (선택)

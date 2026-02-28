@@ -1,4 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  MessageFlags,
+} = require("discord.js");
 const db = require("../../../Database");
 
 module.exports = {
@@ -7,7 +11,7 @@ module.exports = {
     .setDescription("현재 보유 금액을 확인합니다 💰"),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: false }); // 생각 중... 표시
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral }); // 생각 중... 표시
 
     // DB에서 유저 정보 가져오기
     let user = db

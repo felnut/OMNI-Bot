@@ -5,6 +5,7 @@ const {
   ButtonStyle,
   EmbedBuilder,
   ComponentType,
+  MessageFlags,
 } = require("discord.js");
 const db = require("../../../Database");
 const { getUserOrFail } = require("../utils/user");
@@ -29,7 +30,7 @@ module.exports = {
           "아직 돈 시스템에 가입 안 했어 ㅠㅠ\n먼저 `/돈` 쳐서 지갑 만들어!";
       else if (err.message === "INSUFFICIENT_MONEY")
         content = `💸 돈 부족! (500원 필요해~)`;
-      return interaction.editReply({ content, ephemeral: true });
+      return interaction.editReply({ content, flags: MessageFlags.Ephemeral });
     }
 
     // 500원 차감
@@ -105,7 +106,7 @@ module.exports = {
 
       await message.edit({ embeds: [scratchingEmbed], components: [] });
 
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // 당첨금 지급
       db.prepare("UPDATE user SET money = money + ? WHERE user_id = ?").run(

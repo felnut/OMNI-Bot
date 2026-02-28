@@ -11,7 +11,7 @@ module.exports = {
     .setName("조커")
     .setDescription("조커 찾기 게임! 베팅 5만원으로 한 번 뽑아보자!"),
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: false });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const betAmount = 50000;
 
