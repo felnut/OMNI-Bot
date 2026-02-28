@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const db = require("../../../Database");
 const { getUserOrFail } = require("../utils/user");
 
@@ -18,7 +18,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: false });
+    await interaction.deferReply({ flags:MessageFlags.Ephemeral });
 
     const target = interaction.options.getUser("유저");
     const amount = interaction.options.getInteger("금액");
@@ -48,7 +48,7 @@ module.exports = {
           "아직 돈 시스템에 가입 안 했어.\n먼저 `/돈` 쳐서 지갑 만들어!";
       else if (err.message === "INSUFFICIENT_MONEY")
         content = `💸 돈 부족! (필요: ${amount.toLocaleString()}원)`;
-      return interaction.editReply({ content, ephemeral: true });
+      return interaction.editReply({ content, flags:MessageFlags.Ephemeral });
     }
 
     let receiver = db

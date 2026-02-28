@@ -12,7 +12,7 @@ module.exports = {
     .setDescription("출석하고 돈 받자! (매일 밤 12시 갱신)"),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: false });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const userId = interaction.user.id;
 
@@ -31,7 +31,7 @@ module.exports = {
         return interaction.editReply({
           content:
             "아직 돈 시스템에 가입 안 했어.\n먼저 `/돈` 쳐서 지갑 만들어!",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       return;

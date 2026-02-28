@@ -1,4 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  MessageFlags,
+} = require("discord.js");
 const db = require("../../../Database");
 const { getUserOrFail } = require("../utils/user");
 
@@ -41,7 +45,7 @@ module.exports = {
       } else if (err.message === "INSUFFICIENT_MONEY") {
         content = `💸 돈 부족! (필요: ${bet.toLocaleString()}원)`;
       }
-      return interaction.editReply({ content, ephemeral: true });
+      return interaction.editReply({  });
     }
 
     // 게임 진행
