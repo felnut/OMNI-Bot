@@ -6,21 +6,21 @@ module.exports = {
     .setName("급식")
     .setDescription("급식을 알려줘요!")
     .addNumberOption((Option) =>
-      Option.setName("year")
+      Option.setName("년")
         .setDescription(
           "년도를 입력해주세요.(입력하지 않으면 현재 년도로 입력됩니다.)",
         )
         .setRequired(false),
     )
     .addNumberOption((Option) =>
-      Option.setName("month")
+      Option.setName("월")
         .setDescription(
           "월을 입력해주세요.(입력하지 않으면 현재 월로 입력됩니다.)",
         )
         .setRequired(false),
     )
     .addNumberOption((Option) =>
-      Option.setName("day")
+      Option.setName("일")
         .setDescription(
           "일을 입력해주세요.(입력하지 않으면 현재 일로 입력됩니다.)",
         )
@@ -34,9 +34,9 @@ module.exports = {
       const currentMonth = date.getMonth() + 1;
       const currentDay = date.getDate();
 
-      const finalYear = interaction.options.getNumber("year") ?? currentYear;
-      const finalMonth = String(interaction.options.getNumber("month") ?? currentMonth).padStart(2, "0");
-      const finalDay = String(interaction.options.getNumber("day") ?? currentDay).padStart(2, "0");
+      const finalYear = interaction.options.getNumber("년") ?? currentYear;
+      const finalMonth = String(interaction.options.getNumber("월") ?? currentMonth).padStart(2, "0");
+      const finalDay = String(interaction.options.getNumber("일") ?? currentDay).padStart(2, "0");
 
       const response = await axios.get(
         `https://open.neis.go.kr/hub/mealServiceDietInfo`,
