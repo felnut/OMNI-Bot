@@ -1,9 +1,10 @@
-require("dotenv").config();
+const envFile = process.argv.includes("--test") ? ".env.test" : ".env";
+require("dotenv").config({ path: envFile, override: true });
 const { REST, Routes } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");
 
-// .env 설정값 검증 및 자동 수정 함수
+// .env 검증 함수
 function validateAndSanitizeEnv({ autoFix = true } = {}) {
   const required = ["DISCORD_TOKEN", "CLIENT_ID", "GUILD_ID"];
   const envPath = path.join(__dirname, ".env");
@@ -19,7 +20,6 @@ function validateAndSanitizeEnv({ autoFix = true } = {}) {
       const key = line.slice(0, idx).trim();
       let val = line.slice(idx + 1).trim();
 
-      // 따옴표 제거
       if (
         (val.startsWith('"') && val.endsWith('"')) ||
         (val.startsWith("'") && val.endsWith("'"))
@@ -34,9 +34,9 @@ function validateAndSanitizeEnv({ autoFix = true } = {}) {
 
     if (fixed && autoFix) {
       try {
-        fs.copyFileSync(envPath, `${envPath}.bak`);
+        fs.copyFileSync(envPath, `${envPath}.back`);
         fs.writeFileSync(envPath, out.join("\n"), "utf8");
-        console.log(".env 파일의 공백/따옴표를 정리했습니다. (백업: .env.bak)");
+        console.log(".env 파일의 공백/따옴표를 정리했습니다. (백업: .env.back)");
       } catch (err) {
         console.warn(".env 자동 수정 실패:", err.message);
       }
@@ -54,18 +54,14 @@ function validateAndSanitizeEnv({ autoFix = true } = {}) {
     return false;
   }
 
-  // 토큰 형식 체크 (M으로 시작하는지 확인)
   if (!process.env.DISCORD_TOKEN.startsWith("M")) {
-    console.warn(
-      "주의: DISCORD_TOKEN 형식이 올바르지 않은 것 같습니다. (복사 실수 확인 요망)",
-    );
+    console.warn("주의: DISCORD_TOKEN 형식이 올바르지 않은 것 같습니다.");
   }
 
   return true;
 }
 
-if (!validateAndSanitizeEnv()) process.exit(1);
-
+// 명령어 수집
 const commands = [];
 const foldersPath = path.join(__dirname, "bot/commands");
 const commandFolders = fs.readdirSync(foldersPath);
@@ -87,7 +83,12 @@ for (const folder of commandFolders) {
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 
-async function deployCommands(retries = 0) {
+async function deployCommands() {
+  if (!validateAndSanitizeEnv()) {
+    console.error("🔎 .env 설정을 먼저 확인해주세요!");
+    return false;
+  }
+
   try {
     console.log(`${commands.length}개의 명령어를 디스코드에 등록하는 중...`);
     await rest.put(
@@ -97,25 +98,16 @@ async function deployCommands(retries = 0) {
       ),
       { body: commands },
     );
-    console.log("명령어 등록에 성공했습니다!");
+    console.log("✅ 명령어 등록 성공!");
+    return true;
   } catch (error) {
     if (error?.status === 401) {
-      console.error(
-        "인증 실패 (401 Unauthorized): DISCORD_TOKEN이 올바르지 않습니다.",
-      );
-      console.error(
-        "디스코드 개발자 포털에서 토큰을 다시 발급(Reset Token) 받아보세요.",
-      );
-      return;
+      console.error("인증 실패 (401): DISCORD_TOKEN 다시 확인해주세요");
+      return false;
     }
-
     console.error("명령어 등록 실패:", error?.message || error);
-    if (retries < 1) {
-      console.log("1초 후 재시도합니다...");
-      await new Promise((r) => setTimeout(r, 1000));
-      return deployCommands(retries + 1);
-    }
+    return false;
   }
 }
 
-deployCommands();
+module.exports = { deployCommands };
