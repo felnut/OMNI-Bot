@@ -1,4 +1,6 @@
-require("dotenv").config();
+const envFile = process.argv.includes("--test") ? ".env.test" : ".env";
+require("dotenv").config({ path: envFile, override: true });
+
 const {
   Client,
   Collection,
@@ -17,6 +19,9 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ],
 });
+
+// DB 자동 연결
+require("./Database");
 
 // 커맨드 핸들러
 client.commands = new Collection();
@@ -61,7 +66,16 @@ client.once(Events.ClientReady, (c) =>
   console.log(`✅ 준비 완료! 계정: ${c.user.tag}`),
 );
 
+// deploy 함수 불러오기
+const { deployCommands } = require("./deploy-commands");
+
 async function start() {
+  // --deploy 붙이면 자동 등록
+  if (process.argv.includes("--deploy")) {
+    console.log("🔄 커맨드 등록 시작합니다...");
+    await deployCommands();
+  }
+
   try {
     await client.login(process.env.DISCORD_TOKEN);
   } catch (err) {
