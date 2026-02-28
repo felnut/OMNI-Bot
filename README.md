@@ -37,7 +37,7 @@
 
 ## 요구 사항
 
-- Node.js v18 이상 강력 권장 (v16 이상 동작 가능)
+- Node.js v18 이상 권장 (v16 이상 동작 가능)
 - npm 또는 pnpm / yarn
 - Discord Bot 토큰 ([Discord Developer Portal](https://discord.com/developers/applications))
 - NEIS Open API 키 ([발급 페이지](https://open.neis.go.kr/portal/mainPage.do))
@@ -172,7 +172,7 @@ OWNER_ID=테스터_ID
 ## 기여
 
 버그 리포트 및 기능 제안은  
-[Issues](https://github.com/너의유저네임/DanBungBot/issues)에서 등록해 주세요.
+[Issues](https://github.com/zyntax6760/DanBungBot/issues)에서 등록해 주세요.
 
 Pull Request도 언제든 환영합니다.
 
