@@ -90,7 +90,7 @@ LAVALINK_PASSWORD=설정한_비밀번호
 YTDLP_PATH=yt-dlp
 ```
 
-Windows에서는 `music/start.bat`으로 Lavalink를 실행한 뒤 봇을 시작합니다.
+봇을 실행하면 같은 컴퓨터의 Lavalink(`music/Lavalink.jar`)도 자동으로 함께 실행됩니다. 이미 실행 중이면 그대로 이어서 쓰고, Lavalink가 예기치 않게 종료되면 다시 실행하며, 봇이 정상 종료되면 함께 종료됩니다. 로그는 `music/run.log`에 남습니다. 직접 관리하고 싶다면 `.env`에 `LAVALINK_AUTOSTART=0`을 넣고 `music/start.bat`으로 따로 실행하세요.
 
 ```text
 /음악 재생 검색어:곡명 또는 링크
@@ -134,7 +134,7 @@ music/tools/ytdlp-venv/bin/python -m pip install yt-dlp
 
 | 환경 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `MUSIC_CACHE_MAX_MB` | `2048` | 음원 캐시 용량(MB). `0`이면 비활성화 |
+| `MUSIC_CACHE_MAX_MB` | `0` (꺼짐) | 음원 캐시 용량(MB). 음원 파일을 서버에 저장하므로 저작권 위험이 있어 기본은 꺼짐입니다 |
 | `MUSIC_CACHE_MAX_MINUTES` | `30` | 캐시에 저장할 곡의 최대 길이(분) |
 | `MUSIC_CACHE_PORT` | `2334` | 로컬 캐시 서버 포트 |
 | `YTDLP_USE_WORKER` | 활성화 | `0`이면 상시 워커 비활성화 |
