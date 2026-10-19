@@ -253,6 +253,11 @@ async function start() {
     }
   }
 
+  // 봇을 실행할 때는 음악 서버(Lavalink)도 함께 실행한다 (명령어 등록 --deploy 등에서는 여기까지 오지 않는다)
+  await require("./bot/managers/lavalinkProcess")
+    .startLavalink()
+    .catch((e) => console.error("🎵 Lavalink 자동 실행 오류:", e?.message));
+
   // "--deploy" 옵션이 없을 때만 봇 로그인 수행
   try {
     await client.login(process.env.DISCORD_TOKEN);

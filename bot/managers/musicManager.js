@@ -156,7 +156,7 @@ function createMusicManager(client) {
         host: process.env.LAVALINK_HOST || "127.0.0.1",
         port: Number(process.env.LAVALINK_PORT) || 2333,
         authorization: process.env.LAVALINK_PASSWORD || "CHANGE_ME",
-        retryAmount: 10,
+        retryAmount: 30, // 봇이 Lavalink를 함께 실행할 때, 첫 실행(플러그인 내려받기 등)이 오래 걸려도 계속 연결을 시도한다
         retryDelay: 10_000,
       },
     ],

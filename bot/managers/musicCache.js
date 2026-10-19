@@ -9,7 +9,8 @@ const ytdlp = require("./ytdlp");
 const DIR = path.join(__dirname, "../../music/cache");
 const PORT = Number(process.env.MUSIC_CACHE_PORT) || 2334;
 const BASE_URL = process.env.MUSIC_CACHE_BASE_URL || `http://127.0.0.1:${PORT}`;
-const MAX_BYTES = (process.env.MUSIC_CACHE_MAX_MB === undefined ? 2048 : Number(process.env.MUSIC_CACHE_MAX_MB)) * 1024 * 1024;
+// 음원 파일 저장(복제)은 저작권 위험이 있어 기본값을 꺼짐(0)으로 한다. 켜려면 MUSIC_CACHE_MAX_MB에 용량(MB)을 지정한다
+const MAX_BYTES = (process.env.MUSIC_CACHE_MAX_MB === undefined ? 0 : Number(process.env.MUSIC_CACHE_MAX_MB)) * 1024 * 1024;
 const MAX_DURATION_S = (Number(process.env.MUSIC_CACHE_MAX_MINUTES) || 30) * 60; // 이보다 긴 영상은 저장하지 않음
 const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
 
