@@ -9,8 +9,8 @@
 | 적용 기간 | 버전 |
 |---|---|
 | 2026-10-15 ~ 현재 | [현행 버전](privacy) |
-| 2026-10-14 ~ 2026-10-14 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/086be7a/docs/privacy.md) |
-| 2026-10-01 ~ 2026-10-13 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/55d97a4/docs/privacy.md) |
+| 2026-10-14 ~ 2026-10-14 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/553f3fe/docs/privacy.md) |
+| 2026-10-01 ~ 2026-10-13 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/556189b/docs/privacy.md) |
 
 **변경 내용**
 - 2026-10-15
@@ -31,8 +31,8 @@
 | 적용 기간 | 버전 |
 |---|---|
 | 2026-10-15 ~ 현재 | [현행 버전](terms) |
-| 2026-10-14 ~ 2026-10-14 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/086be7a/docs/terms.md) |
-| 2026-10-01 ~ 2026-10-13 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/55d97a4/docs/terms.md) |
+| 2026-10-14 ~ 2026-10-14 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/553f3fe/docs/terms.md) |
+| 2026-10-01 ~ 2026-10-13 | [이전 버전 보기](https://github.com/felnut/DanBungBot/blob/556189b/docs/terms.md) |
 
 **변경 내용**
 - 2026-10-15
