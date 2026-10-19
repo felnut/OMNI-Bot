@@ -20,6 +20,7 @@
 - 📈 **주식 시스템** : 종목별 주가 변동, 매수/매도, 보유 자산 및 랭킹
 - 🔧 **관리자 명령어** (관리자에게만 보임): 봇 주인 전용 돈 강제 설정(`/돈설정`)·시세 강제 갱신(`/시세갱신`), 서버 관리자 이메일 등록(`/관리자`), 서버 관리(`/서버관리` 청소·슬로우모드·잠금·공지, `/경고`, `/타임아웃`, `/추방`, `/차단`, `/로그채널설정`), `/급식알림`
 - 🎵 **음악 재생** : Lavalink + yt-dlp 기반 음성 채널 음악 (`/음악`, 재생 패널 버튼)
+- 🏷️ **자동 별명** : 봇이 서버에 들어가면 서버 별명을 자동으로 "OMNI"로 변경 (`BOT_NICKNAME`으로 변경, 이미 별명이 있으면 유지)
 - 🍽️ **학교 유틸** : [NEIS Open API](https://open.neis.go.kr/) 기반 급식(`/급식`)·시간표(`/시간표`)·학사일정(`/학사일정`, `/일정검색`) 조회, 평일 아침 급식 자동 알림(`/급식알림`)
 - 🧰 **편의 기능** : `/디데이`(서버 D-day), `/추첨`, `/서버정보`, `/유저정보`
 - 🧪 **테스트 모드** : `--test` 플래그로 `game-test.db` 분리 사용 가능
@@ -52,8 +53,8 @@
 ### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/felnut/DanBungBot
-cd DanBungBot
+git clone https://github.com/felnut/OMNI-Bot
+cd OMNI-Bot
 ```
 
 ### 2. 의존성 설치
@@ -220,7 +221,7 @@ OWNER_ID=테스터_ID
 ## 기여
 
 버그 리포트 및 기능 제안은  
-[Issues](https://github.com/felnut/DanBungBot/issues)에서 등록해 주세요.
+[Issues](https://github.com/felnut/OMNI-Bot/issues)에서 등록해 주세요.
 
 Pull Request도 언제든 환영합니다.
 

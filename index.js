@@ -133,6 +133,9 @@ client.once(Events.ClientReady, (c) => {
   const refunded = require("./bot/managers/bets").refundPending();
   if (refunded) console.log(`💸 정산되지 않은 베팅 ${refunded}건을 돌려줬어요.`);
 
+  // 봇 별명 자동 설정 (서버에 들어가면 "OMNI"로, 이미 별명이 있으면 그대로)
+  require("./bot/managers/botNickname").startBotNickname(client);
+
   // 급식 알림 (설정한 서버에 평일 07:30)
   require("./bot/managers/lunchNotice").startLunchNotice(client);
 

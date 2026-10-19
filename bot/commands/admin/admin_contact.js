@@ -63,7 +63,7 @@ module.exports = {
           "• **목적**: 봇 운영 공지(점검·정책 변경·초기화 등) 안내\n" +
           "• 제3자에게 제공하지 않습니다.\n" +
           "• `/관리자 해제`로 즉시 삭제할 수 있고, 삭제 요청은 dev@felnut.com으로도 가능합니다.\n" +
-          "• 자세한 내용: https://felnut.github.io/DanBungBot/privacy",
+          "• 자세한 내용: https://felnut.github.io/OMNI-Bot/privacy",
         flags: EPHEMERAL,
       });
     }
