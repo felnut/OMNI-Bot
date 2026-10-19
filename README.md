@@ -6,22 +6,22 @@
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
 
 단국대학교부속소프트웨어고등학교 Discord 서버를 위한 게임 & 유틸리티 봇입니다.  
-로컬 SQLite 데이터베이스를 활용해 사용자 돈, 출석, 저금 등을 관리합니다.
+로컬 SQLite 데이터베이스를 활용해 사용자 돈, 출석, 주식 등을 관리합니다.
 
 데일리 출석, 홀짝·복권·카드뽑기 같은 미니게임,  
-송금·랭킹 시스템, 학교 급식 조회, 욕설 검열 기능까지 포함되어 있습니다.
+송금·랭킹 시스템, 주식, 음악 재생, 학교 급식·시간표·학사일정 조회와 편의 기능까지 포함되어 있습니다.
 
 ---
 
 ## 기능 한눈에 보기
 
-- 💰 **경제 시스템** : 개인 돈 관리, 데일리 출석 보상, 송금, 서버 랭킹
-- 🎲 **미니게임** : 홀짝 (2배), 복권 (꽝 없음), 카드뽑기 (카드별 배당, 조커 대박)
+- 💰 **경제 시스템** : 개인 돈 관리, 데일리 출석 보상, 송금(24시간 최대 30,000원), 서버 랭킹
+- 🎲 **미니게임** : 홀짝 (2배, 승률 47%), 복권 (500원, 긁을 때 차감), 카드뽑기 (카드별 배당, 조커 10배), 블랙잭 (히트/스탠드, 승리금 수수료 3%), 룰렛 (0·00 포함 38칸)
 - 📈 **주식 시스템** : 종목별 주가 변동, 매수/매도, 보유 자산 및 랭킹
-- 🔧 **관리자 명령어** : 봇 주인 전용 돈 강제 설정
+- 🔧 **관리자 명령어** (관리자에게만 보임): 봇 주인 전용 돈 강제 설정(`/돈설정`)·시세 강제 갱신(`/시세갱신`), 서버 관리자 이메일 등록(`/관리자`), 서버 관리(`/서버관리` 청소·슬로우모드·잠금·공지, `/경고`, `/타임아웃`, `/추방`, `/차단`, `/로그채널설정`), `/급식알림`
 - 🎵 **음악 재생** : Lavalink + yt-dlp 기반 음성 채널 음악 (`/음악`, 재생 패널 버튼)
-- 🍽️ **학교 급식** : [NEIS Open API](https://open.neis.go.kr/) 기반 급식 조회
-- 🚫 **채팅 검열** : 욕설 자동 필터링 & 대체어 변환
+- 🍽️ **학교 유틸** : [NEIS Open API](https://open.neis.go.kr/) 기반 급식(`/급식`)·시간표(`/시간표`)·학사일정(`/학사일정`, `/일정검색`) 조회, 평일 아침 급식 자동 알림(`/급식알림`)
+- 🧰 **편의 기능** : `/디데이`(서버 D-day), `/추첨`, `/서버정보`, `/유저정보`
 - 🧪 **테스트 모드** : `--test` 플래그로 `game-test.db` 분리 사용 가능
 
 ---
@@ -52,7 +52,7 @@
 ### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/zyntax6760/DanBungBot
+git clone https://github.com/felnut/DanBungBot
 cd DanBungBot
 ```
 
@@ -74,25 +74,24 @@ yarn install
 
 ```
 DISCORD_TOKEN=실제 봇 토큰
-NEIS_KEY=나이스 API 키
+NEIS_TOKEN=나이스 API 키
 CLIENT_ID=봇 애플리케이션 ID
 GUILD_ID=운영서버 ID
 OWNER_ID=테스터 ID
-NOTICE_CHANNEL_ID=공지를 보낼 채널 ID (선택)
 ```
 
 ### `.env.test` (테스트용)
 
 ```
 DISCORD_TOKEN=테스트 봇 토큰
-NEIS_KEY=나이스 API 키
+NEIS_TOKEN=나이스 API 키
 CLIENT_ID=테스트 봇 애플리케이션 ID
 GUILD_ID=테스트 서버 ID
 OWNER_ID=테스터_ID
 ```
 
 `.env` 파일에 잘못된 따옴표나 공백이 포함될 경우  
-`deploy-commands.js`가 자동 정리 후 `.env.bak` 파일을 생성합니다.
+`deploy-commands.js`가 자동 정리 후 `.env.back` 파일을 생성합니다.
 
 ---
 
@@ -104,7 +103,7 @@ OWNER_ID=테스터_ID
 | `node index.js --test` | 테스트 봇 실행 | game-test.db |
 | `node index.js --deploy` | 실제 서버 슬래시 커맨드 등록 | game.db |
 | `node index.js --test --deploy` | 테스트 서버 슬래시 커맨드 등록 | game-test.db |
-| `node index.js --reset-stocks` | 주식 시장 1회성 초기화(백업 → 주가 기준가 복원 → 보유 주식 평가액 50% 현금 보상 → 공지 전송). 한 번만 실행되며 `--test`와 함께 쓰면 테스트 DB에 적용 | game.db |
+| `node index.js --reset-stocks` | 주식 시장 1회성 초기화(백업 → 주가 기준가 복원 → 보유 주식 평가액 50% 현금 보상 → 안내문을 콘솔에 출력, 공지는 운영자가 직접 전달). 한 번만 실행되며 `--test`와 함께 쓰면 테스트 DB에 적용 | game.db |
 
 ---
 
@@ -148,6 +147,7 @@ OWNER_ID=테스터_ID
 | `MUSIC_CACHE_MAX_MB` | 2048 | 캐시 총 용량. 넘으면 오래 안 쓴 곡부터 삭제. `0`이면 캐시 끔 |
 | `MUSIC_CACHE_MAX_MINUTES` | 30 | 이보다 긴 영상·라이브는 저장하지 않음 |
 | `MUSIC_CACHE_PORT` | 2334 | 로컬 파일 서버 포트 |
+| `YTDLP_AUTO_UPDATE` | 켜짐 | `0`이면 추출 실패 시 yt-dlp 자동 업데이트(`pip install -U`)를 하지 않음 |
 
 캐시를 비우려면 `music/cache/` 폴더를 지우면 됩니다. 유튜브 추출이 실패하면 `yt-dlp`를 자동으로 업데이트(가상환경이면 `pip install -U yt-dlp`)한 뒤 한 번 재시도하며, Lavalink 유튜브 플러그인은 봇 차단으로 쓰지 않습니다.
 
@@ -170,14 +170,7 @@ OWNER_ID=테스터_ID
 | money | 보유 금액 |
 | daily_last_reset | 마지막 출석 날짜 |
 | streak | 연속 출석 일수 |
-
-#### bank
-
-| 컬럼 | 설명 |
-|------|------|
-| id (PK) | 고정값(1) |
-| amount | 조커 누적 저금 |
-| failed_attempts | 실패 횟수 |
+| last_active | 마지막 이용 시각(ms), 12개월 미이용 시 삭제 기준 |
 
 #### stocks
 
@@ -196,17 +189,6 @@ OWNER_ID=테스터_ID
 | user_id + symbol (PK) | 유저 보유 종목 키 |
 | shares | 보유 주식 수 |
 | avg_buy_price | 평단가 |
-
----
-
-## 텍스트 검열 시스템
-
-- `text_censorship.js`
-- `filter.json`
-
-동작 흐름:
-
-욕설 감지 → 원본 메시지 삭제 → 대체어 변환 후 임베드 재전송
 
 ---
 
@@ -229,15 +211,16 @@ OWNER_ID=테스터_ID
 ## 성능 최적화 노트
 
 - 랭킹/주식 시황/주식 랭킹은 **인메모리 캐시(Map+TTL)** 를 사용해 반복 호출 시 DB 부하를 줄입니다(프로세스 재시작 시 캐시는 초기화됩니다).
-- 주식 매수/매도, 송금, 조커(은행)는 **트랜잭션**으로 묶어 부분 업데이트를 방지합니다.
-- `bank`는 **단일 행(id=1)** 만 사용하도록 고정합니다.
+- 주식 매수/매도, 송금은 **트랜잭션**으로 묶어 부분 업데이트를 방지합니다.
+- 12개월 미이용 계정과 30일 지난 음악 로그는 24시간마다 자동 삭제됩니다(`bot/managers/maintenance.js`).
+- 이 봇은 `GUILD_ID` 한 서버에만 명령어를 등록하는 **단일 서버용**이며, 경제 데이터는 서버 구분 없이 하나로 관리됩니다.
 
 ---
 
 ## 기여
 
 버그 리포트 및 기능 제안은  
-[Issues](https://github.com/zyntax6760/DanBungBot/issues)에서 등록해 주세요.
+[Issues](https://github.com/felnut/DanBungBot/issues)에서 등록해 주세요.
 
 Pull Request도 언제든 환영합니다.
 
