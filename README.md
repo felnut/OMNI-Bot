@@ -1,234 +1,185 @@
-# 단붕봇 (DanBungBot)
+# OMNI
 
-[![Node.js](https://img.shields.io/badge/Node.js-v18+-378e3d?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![discord.js](https://img.shields.io/badge/discord.js-v14-5865F2?logo=discord&logoColor=white)](https://discord.js.org/)
-[![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
+**서버에 필요한 다양한 기능을 하나로.**
 
-단국대학교부속소프트웨어고등학교 Discord 서버를 위한 게임 & 유틸리티 봇입니다.  
-로컬 SQLite 데이터베이스를 활용해 사용자 돈, 출석, 주식 등을 관리합니다.
+[![Node.js](https://img.shields.io/badge/Node.js-22%20%7C%2024-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![discord.js](https://img.shields.io/badge/discord.js-v14-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.js.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial-17191F?style=flat-square)](LICENSE)
 
-데일리 출석, 홀짝·복권·카드뽑기 같은 미니게임,  
-송금·랭킹 시스템, 주식, 음악 재생, 학교 급식·시간표·학사일정 조회와 편의 기능까지 포함되어 있습니다.
+옴니봇은 게임, 음악, 학교생활 정보와 서버 관리를 지원하는 다기능 Discord 봇입니다.
 
----
+[기능](#기능) · [시작하기](#시작하기) · [이용약관](docs/terms.md) · [개인정보 처리방침](docs/privacy.md) · [변경 기록](docs/changelog.md)
 
-## 기능 한눈에 보기
+## 기능
 
-- 💰 **경제 시스템** : 개인 돈 관리, 데일리 출석 보상, 송금(24시간 최대 30,000원), 서버 랭킹
-- 🎲 **미니게임** : 홀짝 (2배, 승률 47%), 복권 (500원, 긁을 때 차감), 카드뽑기 (카드별 배당, 조커 10배), 블랙잭 (히트/스탠드, 승리금 수수료 3%), 룰렛 (0·00 포함 38칸)
-- 📈 **주식 시스템** : 종목별 주가 변동, 매수/매도, 보유 자산 및 랭킹
-- 🔧 **관리자 명령어** (관리자에게만 보임): 봇 주인 전용 돈 강제 설정(`/돈설정`)·시세 강제 갱신(`/시세갱신`), 서버 관리자 이메일 등록(`/관리자`), 서버 관리(`/서버관리` 청소·슬로우모드·잠금·공지, `/경고`, `/타임아웃`, `/추방`, `/차단`, `/로그채널설정`), `/급식알림`
-- 🎵 **음악 재생** : Lavalink + yt-dlp 기반 음성 채널 음악 (`/음악`, 재생 패널 버튼)
-- 🏷️ **자동 별명** : 봇이 서버에 들어가면 서버 별명을 자동으로 "OMNI"로 변경 (`BOT_NICKNAME`으로 변경, 이미 별명이 있으면 유지)
-- 🍽️ **학교 유틸** : [NEIS Open API](https://open.neis.go.kr/) 기반 급식(`/급식`)·시간표(`/시간표`)·학사일정(`/학사일정`, `/일정검색`) 조회, 평일 아침 급식 자동 알림(`/급식알림`)
-- 🧰 **편의 기능** : `/디데이`(서버 D-day), `/추첨`, `/서버정보`, `/유저정보`
-- 🧪 **테스트 모드** : `--test` 플래그로 `game-test.db` 분리 사용 가능
+| 분야 | 기능 |
+| --- | --- |
+| 경제 | 출석 보상, 잔액 조회, 송금, 랭킹 |
+| 게임 | 홀짝, 복권, 카드뽑기, 블랙잭, 룰렛, 숫자야구 |
+| 주식 | 가상 주식 시세, 매수·매도, 보유 자산, 뉴스, 차트 |
+| 음악 | 검색·재생, 대기열, 반복, 섞기, 볼륨 조절 |
+| 학교 | 급식, 시간표, 학사일정, 일정 검색, 급식 알림 |
+| 관리 | 메시지 청소, 슬로우모드, 채널 잠금, 공지, 경고, 타임아웃, 추방·차단 |
+| 편의 | 디데이, 추첨, 서버·유저 정보 |
 
----
+## 시작하기
 
-## 기술 스택
-
-- [Node.js](https://nodejs.org/)
-- [discord.js v14](https://discord.js.org/#/docs)
-- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
-- [SQLite](https://www.sqlite.org/index.html)
-- [axios](https://axios-http.com/)
-- [dotenv](https://github.com/motdotla/dotenv)
-
----
-
-## 요구 사항
-
-- Node.js v18 이상 권장 (v16 이상 동작 가능)
-- npm 또는 pnpm / yarn
-- Discord Bot 토큰 ([Discord Developer Portal](https://discord.com/developers/applications))
-- NEIS Open API 키 ([발급 페이지](https://open.neis.go.kr/portal/mainPage.do))
-- (음악 기능) Java 17 이상, [Lavalink v4](https://github.com/lavalink-devs/Lavalink/releases) `Lavalink.jar`, [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-
----
-
-## 설치
-
-### 1. 저장소 클론
+Node.js **22 또는 24**와 Discord 봇 토큰이 필요합니다.
 
 ```bash
-git clone https://github.com/felnut/OMNI-Bot
+git clone https://github.com/felnut/OMNI-Bot.git
 cd OMNI-Bot
+npm install
 ```
 
-### 2. 의존성 설치
+프로젝트 루트에 `.env` 파일을 생성합니다.
+
+```dotenv
+DISCORD_TOKEN=봇_토큰
+CLIENT_ID=애플리케이션_ID
+GUILD_ID=서버_ID
+OWNER_ID=봇_소유자_ID
+NEIS_TOKEN=나이스_API_키
+```
+
+명령어를 등록하고 봇을 실행합니다.
 
 ```bash
-npm install
-# 또는
-pnpm install
-# 또는
-yarn install
+node index.js --deploy
+node index.js
 ```
 
----
+> 명령어는 `GUILD_ID`로 지정한 서버에 등록됩니다. 경제 데이터는 서버별로 분리되지 않습니다.
 
-## 환경 변수 설정
+## 추가 설정
 
-### `.env` (운영용)
+<details>
+<summary>학교 정보</summary>
 
-```
-DISCORD_TOKEN=실제 봇 토큰
-NEIS_TOKEN=나이스 API 키
-CLIENT_ID=봇 애플리케이션 ID
-GUILD_ID=운영서버 ID
-OWNER_ID=테스터 ID
-```
+[NEIS Open API](https://open.neis.go.kr/)에서 발급한 키를 `NEIS_TOKEN`에 입력합니다.
 
-### `.env.test` (테스트용)
+서버 관리자가 학교를 검색하고 등록하면 학교 관련 기능을 사용할 수 있습니다.
 
-```
-DISCORD_TOKEN=테스트 봇 토큰
-NEIS_TOKEN=나이스 API 키
-CLIENT_ID=테스트 봇 애플리케이션 ID
-GUILD_ID=테스트 서버 ID
-OWNER_ID=테스터_ID
+```text
+/학교등록 검색 이름:학교명
+/학교등록 확인
 ```
 
-`.env` 파일에 잘못된 따옴표나 공백이 포함될 경우  
-`deploy-commands.js`가 자동 정리 후 `.env.back` 파일을 생성합니다.
+- `/급식` — 급식 조회
+- `/시간표` — 시간표 조회
+- `/학사일정` — 학사일정 조회
+- `/일정검색` — 키워드로 일정 검색
+- `/급식알림` — 평일 아침 급식 알림 설정
 
----
+</details>
 
-## 실행 방법
+<details>
+<summary>음악 재생</summary>
 
-| 명령어 | 설명 | 사용 DB |
-|--------|------|---------|
-| `node index.js` | 실제 봇 실행 | game.db |
-| `node index.js --test` | 테스트 봇 실행 | game-test.db |
-| `node index.js --deploy` | 실제 서버 슬래시 커맨드 등록 | game.db |
-| `node index.js --test --deploy` | 테스트 서버 슬래시 커맨드 등록 | game-test.db |
-| `node index.js --reset-stocks` | 주식 시장 1회성 초기화(백업 → 주가 기준가 복원 → 보유 주식 평가액 50% 현금 보상 → 안내문을 콘솔에 출력, 공지는 운영자가 직접 전달). 한 번만 실행되며 `--test`와 함께 쓰면 테스트 DB에 적용 | game.db |
+음악 기능에는 **Java 17 이상**, **Lavalink v4**, **yt-dlp**가 필요합니다.
 
----
+1. [Lavalink](https://github.com/lavalink-devs/Lavalink/releases)의 `Lavalink.jar`를 `music/`에 넣습니다.
+2. `music/application.yml.example`을 `music/application.yml`로 복사하고 비밀번호를 설정합니다.
+3. `.env`에 연결 정보를 추가합니다.
 
-### 정상 실행 로그 예시
-
-```
-✅ Connect Database Success!
-🔄 커맨드 등록 시작합니다...
-✅ 명령어 등록 성공!
-✅ 준비 완료! 계정: BotName#1234
+```dotenv
+LAVALINK_HOST=127.0.0.1
+LAVALINK_PORT=2333
+LAVALINK_PASSWORD=설정한_비밀번호
+YTDLP_PATH=yt-dlp
 ```
 
----
+Windows에서는 `music/start.bat`으로 Lavalink를 실행한 뒤 봇을 시작합니다.
 
-## 음악 기능 설정
+```text
+/음악 재생 검색어:곡명 또는 링크
+```
 
-음악은 별도 프로세스인 **Lavalink**가 재생하고, 유튜브는 **yt-dlp**로 재생 주소를 뽑아 Lavalink에 넘깁니다.
+**선택: yt-dlp 상시 워커**
 
-1. `Lavalink.jar`(v4)를 `music/`에 넣습니다.
-2. `music/application.yml.example`을 `music/application.yml`로 복사하고 `password`를 정합니다.
-3. `.env`에 같은 비밀번호를 적습니다.
-   ```
-   LAVALINK_HOST=127.0.0.1
-   LAVALINK_PORT=2333
-   LAVALINK_PASSWORD=application.yml의 password와 같은 값
-   YTDLP_PATH=yt-dlp (전체 경로 가능, 아래 빠른 방식이 없을 때만 사용)
-   ```
-4. (권장) yt-dlp를 상시 워커로 쓰면 유튜브 곡 추출이 약 4.4초 → 약 2초로 빨라집니다. exe는 실행할 때마다 약 3초의 시작 비용이 들기 때문입니다. Python 3.10 이상이 필요합니다.
-   ```bash
-   python -m venv music/tools/ytdlp-venv
-   music/tools/ytdlp-venv/Scripts/python.exe -m pip install yt-dlp   # Linux/macOS: bin/python
-   ```
-   이 가상환경이 있으면 봇이 `music/ytdlp_worker.py`를 자동으로 띄우고, 없으면 `YTDLP_PATH`의 실행 파일로 동작합니다. (`YTDLP_USE_WORKER=0`이면 항상 실행 파일 사용)
-5. `music/start.bat`으로 Lavalink를 켠 뒤 `node index.js`로 봇을 켭니다.
-6. `/음악 재생 검색어:... [소스:사운드클라우드|유튜브]`로 재생합니다. 허용 링크는 유튜브·사운드클라우드·밴드캠프·트위치·비메오뿐입니다.
+Python 3.10 이상에서 가상환경에 yt-dlp를 설치하면 봇이 워커를 자동으로 실행합니다.
 
-유튜브 곡은 처음 재생할 때 스트림으로 바로 재생하면서 `music/cache/`에 음원 파일을 저장하고, 같은 곡(같은 링크·검색어)은 `yt-dlp` 호출 없이 저장본으로 즉시 재생합니다. 저장본은 봇이 `127.0.0.1:2334`에 여는 로컬 파일 서버를 통해 Lavalink가 읽습니다.
+```bash
+python -m venv music/tools/ytdlp-venv
+```
+
+Windows:
+
+```bash
+music/tools/ytdlp-venv/Scripts/python.exe -m pip install yt-dlp
+```
+
+Linux / macOS:
+
+```bash
+music/tools/ytdlp-venv/bin/python -m pip install yt-dlp
+```
 
 | 환경 변수 | 기본값 | 설명 |
-|---|---|---|
-| `MUSIC_CACHE_MAX_MB` | 2048 | 캐시 총 용량. 넘으면 오래 안 쓴 곡부터 삭제. `0`이면 캐시 끔 |
-| `MUSIC_CACHE_MAX_MINUTES` | 30 | 이보다 긴 영상·라이브는 저장하지 않음 |
-| `MUSIC_CACHE_PORT` | 2334 | 로컬 파일 서버 포트 |
-| `YTDLP_AUTO_UPDATE` | 켜짐 | `0`이면 추출 실패 시 yt-dlp 자동 업데이트(`pip install -U`)를 하지 않음 |
+| --- | --- | --- |
+| `MUSIC_CACHE_MAX_MB` | `2048` | 음원 캐시 용량(MB). `0`이면 비활성화 |
+| `MUSIC_CACHE_MAX_MINUTES` | `30` | 캐시에 저장할 곡의 최대 길이(분) |
+| `MUSIC_CACHE_PORT` | `2334` | 로컬 캐시 서버 포트 |
+| `YTDLP_USE_WORKER` | 활성화 | `0`이면 상시 워커 비활성화 |
+| `YTDLP_AUTO_UPDATE` | 활성화 | `0`이면 추출 실패 시 자동 업데이트 비활성화 |
 
-캐시를 비우려면 `music/cache/` 폴더를 지우면 됩니다. 유튜브 추출이 실패하면 `yt-dlp`를 자동으로 업데이트(가상환경이면 `pip install -U yt-dlp`)한 뒤 한 번 재시도하며, Lavalink 유튜브 플러그인은 봇 차단으로 쓰지 않습니다.
+캐시는 `music/cache/`에 저장됩니다.
 
----
+</details>
 
-## 데이터베이스 구조
+<details>
+<summary>테스트 모드</summary>
 
-### 파일
+`.env.test`에 테스트용 환경 변수를 설정합니다.
 
-- `game.db` (본 서버)
-- `game-test.db` (테스트 서버)
+```bash
+node index.js --test --deploy
+node index.js --test
+```
 
-### 테이블
+| 모드 | 환경 변수 | 데이터베이스 |
+| --- | --- | --- |
+| 운영 | `.env` | `game.db` |
+| 테스트 | `.env.test` | `game-test.db` |
 
-#### user
+</details>
 
-| 컬럼 | 설명 |
-|------|------|
-| user_id (PK) | 디스코드 사용자 ID |
-| money | 보유 금액 |
-| daily_last_reset | 마지막 출석 날짜 |
-| streak | 연속 출석 일수 |
-| last_active | 마지막 이용 시각(ms), 12개월 미이용 시 삭제 기준 |
+<details>
+<summary>주식 초기화</summary>
 
-#### stocks
+```bash
+node index.js --reset-stocks
+```
 
-| 컬럼 | 설명 |
-|------|------|
-| symbol (UNIQUE) | 종목 심볼 |
-| name | 종목명 |
-| price | 현재가 |
-| base_t | 기본 변동 계수 |
-| last_news_title / last_news_time | 최근 뉴스 |
+데이터를 백업한 뒤 주가를 기준가로 복원하고, 보유 주식 평가액의 50%를 현금으로 보상합니다. 한 번만 실행되는 작업이며, 안내문은 콘솔에 출력됩니다.
 
-#### user_stocks
+테스트 데이터에 적용하려면 `--test`를 함께 사용합니다.
 
-| 컬럼 | 설명 |
-|------|------|
-| user_id + symbol (PK) | 유저 보유 종목 키 |
-| shares | 보유 주식 수 |
-| avg_buy_price | 평단가 |
+</details>
 
----
+## 기술
 
-## 문제 해결 FAQ
+Node.js · discord.js · SQLite · better-sqlite3 · Lavalink · yt-dlp · NEIS Open API
 
-**401 Unauthorized**  
-→ Discord 토큰이 잘못되었습니다.
+## 문제 해결
 
-**명령어가 보이지 않음**  
-→ `node index.js --deploy` 다시 실행
-
-**DB 파일이 생성되지 않음**  
-→ 디렉토리 쓰기 권한 확인
-
-**NEIS 급식이 나오지 않음**  
-→ NEIS API 키 및 학교 코드 확인
-
----
-
-## 성능 최적화 노트
-
-- 랭킹/주식 시황/주식 랭킹은 **인메모리 캐시(Map+TTL)** 를 사용해 반복 호출 시 DB 부하를 줄입니다(프로세스 재시작 시 캐시는 초기화됩니다).
-- 주식 매수/매도, 송금은 **트랜잭션**으로 묶어 부분 업데이트를 방지합니다.
-- 12개월 미이용 계정과 30일 지난 음악 로그는 24시간마다 자동 삭제됩니다(`bot/managers/maintenance.js`).
-- 이 봇은 `GUILD_ID` 한 서버에만 명령어를 등록하는 **단일 서버용**이며, 경제 데이터는 서버 구분 없이 하나로 관리됩니다.
-
----
+| 문제 | 확인 사항 |
+| --- | --- |
+| 인증 오류 `401` | `DISCORD_TOKEN` 확인 |
+| 명령어가 표시되지 않음 | `CLIENT_ID`, `GUILD_ID` 확인 후 `--deploy` 실행 |
+| 데이터베이스 생성 실패 | 프로젝트 폴더 쓰기 권한 확인 |
+| 학교 정보 조회 실패 | `NEIS_TOKEN` 및 `/학교등록 확인` 점검 |
+| 음악 재생 실패 | Lavalink 실행 상태, 연결 정보, yt-dlp 설치 확인 |
 
 ## 기여
 
-버그 리포트 및 기능 제안은  
-[Issues](https://github.com/felnut/OMNI-Bot/issues)에서 등록해 주세요.
-
-Pull Request도 언제든 환영합니다.
-
----
+버그와 기능 제안은 [Issues](https://github.com/felnut/OMNI-Bot/issues)에 남겨 주세요. Pull Request도 환영합니다.
 
 ## 라이선스
 
-본 프로젝트는 [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)을 따릅니다. 개인·학습·비영리 목적의 이용은 허용하며, **상업적 이용은 허용하지 않습니다.** (2026-10-15 이전에 MIT 라이선스로 받은 사본에는 당시의 MIT 라이선스가 계속 적용됩니다.)
+[PolyForm Noncommercial 1.0.0](LICENSE) · 비상업적 이용
 
-Copyright © 2026 felnut
+2026년 10월 15일 이전에 MIT 라이선스로 받은 사본에는 당시 라이선스가 계속 적용됩니다.
+
+© 2026 felnut
