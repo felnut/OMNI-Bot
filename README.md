@@ -129,23 +129,6 @@ music/tools/ytdlp-venv/bin/python -m pip install yt-dlp
 </details>
 
 <details>
-<summary>테스트 모드</summary>
-
-`.env.test`에 테스트용 환경 변수를 설정합니다.
-
-```bash
-node index.js --test --deploy
-node index.js --test
-```
-
-| 모드 | 환경 변수 | 데이터베이스 |
-| --- | --- | --- |
-| 운영 | `.env` | `game.db` |
-| 테스트 | `.env.test` | `game-test.db` |
-
-</details>
-
-<details>
 <summary>주식 초기화</summary>
 
 ```bash
@@ -153,8 +136,6 @@ node index.js --reset-stocks
 ```
 
 데이터를 백업한 뒤 주가를 기준가로 복원하고, 보유 주식 평가액의 50%를 현금으로 보상합니다. 한 번만 실행되는 작업이며, 안내문은 콘솔에 출력됩니다.
-
-테스트 데이터에 적용하려면 `--test`를 함께 사용합니다.
 
 </details>
 

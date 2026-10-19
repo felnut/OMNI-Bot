@@ -2,9 +2,7 @@ const Database = require("better-sqlite3");
 const path = require("path");
 
 // ================== DB 연결 설정 ==================
-const isTest = process.argv.includes("--test");
-const dbName = isTest ? "game-test.db" : "game.db";
-const db = new Database(path.join(__dirname, dbName));
+const db = new Database(path.join(__dirname, "game.db"));
 
 // ================== 파일 무결성 검사 ==================
 console.log("🔍 DB 파일 무결성 검사 중...");

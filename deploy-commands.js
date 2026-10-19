@@ -1,5 +1,4 @@
-const envFile = process.argv.includes("--test") ? ".env.test" : ".env";
-require("dotenv").config({ path: envFile, override: true });
+require("dotenv").config({ path: ".env", override: true });
 const { REST, Routes } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");

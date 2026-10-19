@@ -1,5 +1,4 @@
-const envFile = process.argv.includes("--test") ? ".env.test" : ".env";
-require("dotenv").config({ path: envFile, override: true });
+require("dotenv").config({ path: ".env", override: true });
 const {
   Client,
   Collection,
