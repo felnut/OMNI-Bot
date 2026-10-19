@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
-const { getMusicManager, refreshPanel } = require("../../managers/musicManager");
+const { getMusicManager, refreshPanel, safeText } = require("../../managers/musicManager");
 const { ResolveError } = require("../../managers/linkResolver");
 const { prepareTrack, schedulePrefetch, prefetchNow, suggest, failed } = require("../../managers/musicPrep");
 
@@ -25,6 +25,7 @@ module.exports = {
           o
             .setName("검색어")
             .setDescription("제목 또는 URL")
+            .setMaxLength(300)
             .setRequired(true)
             .setAutocomplete(true), // 입력하는 동안 곡을 미리 준비해 재생을 빠르게 함
         )
@@ -41,7 +42,26 @@ module.exports = {
     .addSubcommand((s) => s.setName("일시정지").setDescription("일시정지/재개"))
     .addSubcommand((s) => s.setName("스킵").setDescription("현재 곡 건너뛰기"))
     .addSubcommand((s) => s.setName("정지").setDescription("재생 중지 및 퇴장"))
-    .addSubcommand((s) => s.setName("큐").setDescription("대기열 보기")),
+    .addSubcommand((s) => s.setName("큐").setDescription("지금 곡과 대기열 보기"))
+    .addSubcommand((s) => s.setName("섞기").setDescription("대기열을 무작위로 섞기"))
+    .addSubcommand((s) =>
+      s
+        .setName("반복")
+        .setDescription("반복 재생 설정")
+        .addStringOption((o) =>
+          o
+            .setName("모드")
+            .setDescription("반복 방식")
+            .setRequired(true)
+            .addChoices({ name: "끄기", value: "off" }, { name: "한 곡 반복", value: "track" }, { name: "대기열 반복", value: "queue" }),
+        ),
+    )
+    .addSubcommand((s) =>
+      s
+        .setName("볼륨")
+        .setDescription("볼륨 설정 (0~100)")
+        .addIntegerOption((o) => o.setName("값").setDescription("0~100").setRequired(true).setMinValue(0).setMaxValue(100)),
+    ),
 
   // 검색어를 입력(붙여넣기)하는 동안 호출됨.
   //  - 링크: 곡을 미리 준비해 두고 입력값을 그대로 돌려준다
@@ -162,8 +182,8 @@ module.exports = {
       const playing = !player.playing && !player.paused ? player.play() : Promise.resolve();
       const notice =
         res.loadType === "playlist"
-          ? `📃 플레이리스트 **${res.playlist?.title ?? ""}** ${res.tracks.length}곡 추가`
-          : `➕ 큐에 추가: **${res.tracks[0].info.title}** (${fmt(res.tracks[0].info.duration)})`;
+          ? `📃 플레이리스트 **${safeText(res.playlist?.title)}** ${res.tracks.length}곡 추가`
+          : `➕ 큐에 추가: **${safeText(res.tracks[0].info.title)}** (${fmt(res.tracks[0].info.duration)})`;
       interaction.editReply(notice).catch(() => {});
       await playing;
       console.log(`🎵 /음악 재생 준비 ${Date.now() - startedAt}ms (응답 ${ackMs}ms 후, 총 ${Date.now() - interaction.createdTimestamp}ms)`);
@@ -189,6 +209,23 @@ module.exports = {
       case "정지":
         await player.destroy("stop");
         return interaction.reply("⏹️ 재생을 멈추고 나갔어요.");
+      case "섞기":
+        if (player.queue.tracks.length < 2) {
+          return interaction.reply({ content: "섞을 곡이 부족해요. (대기열 2곡 이상)", flags: MessageFlags.Ephemeral });
+        }
+        await player.queue.shuffle();
+        refreshPanel(player);
+        return interaction.reply(`🔀 대기열 ${player.queue.tracks.length}곡을 섞었어요.`);
+      case "반복": {
+        const mode = interaction.options.getString("모드");
+        await player.setRepeatMode(mode);
+        return interaction.reply({ off: "➡️ 반복을 껐어요.", track: "🔂 한 곡을 반복해요.", queue: "🔁 대기열을 반복해요." }[mode]);
+      }
+      case "볼륨": {
+        const v = interaction.options.getInteger("값");
+        await player.setVolume(v);
+        return interaction.reply(`🔊 볼륨을 **${v}%**로 맞췄어요.`);
+      }
       case "큐": {
         const cur = player.queue.current;
         if (!cur) {
@@ -199,10 +236,12 @@ module.exports = {
         }
         const next = player.queue.tracks
           .slice(0, 10)
-          .map((t, i) => `${i + 1}. ${t.info.title} (${fmt(t.info.duration)})`);
+          .map((t, i) => `${i + 1}. ${safeText(t.info.title)} (${fmt(t.info.duration)})`);
         const more = player.queue.tracks.length - 10;
+        const len = cur.info.isStream ? "🔴 LIVE" : `${fmt(Math.min(player.position ?? 0, cur.info.duration || 0))} / ${fmt(cur.info.duration)}`;
+        const repeat = { off: "반복 끔", track: "한 곡 반복", queue: "대기열 반복" }[player.repeatMode] ?? "반복 끔";
         return interaction.reply(
-          `🎶 **${cur.info.title}**\n${next.join("\n") || "대기열이 비어 있어요."}${more > 0 ? `\n… 외 ${more}곡` : ""}`,
+          `🎶 **${safeText(cur.info.title)}** · ${len} · 🔊 ${player.volume}% · 🔁 ${repeat}\n${next.join("\n") || "대기열이 비어 있어요."}${more > 0 ? `\n… 외 ${more}곡` : ""}`,
         );
       }
     }

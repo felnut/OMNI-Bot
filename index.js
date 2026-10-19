@@ -18,10 +18,13 @@ const client = new Client({
     GatewayIntentBits.GuildMessages, // 서버 메시지 수신
     GatewayIntentBits.MessageContent, // 메시지 내용 읽기 허용
   ],
+  // 외부 글(영상 제목 등)에 든 @everyone·역할 멘션으로 알림이 가지 않도록 모든 멘션 알림을 끈다
+  allowedMentions: { parse: [], repliedUser: false },
 });
 
 const {
   updateStockPrices,
+  ensureOpenTick,
   createStockUpdateEmbed,
   TICK_MINUTES,
   resetStocksOnce,
@@ -29,7 +32,11 @@ const {
 } = require("./bot/managers/stockManager");
 
 // DB 자동 연결 (초기화 및 마이그레이션 실행)
-require("./Database");
+const stmtTouchUser = require("./Database").prepare("UPDATE user SET last_active = ? WHERE user_id = ?");
+
+// 처리되지 않은 오류로 봇 전체가 종료되지 않도록 기록만 남긴다
+process.on("unhandledRejection", (reason) => console.error("처리되지 않은 Promise 거절:", reason));
+process.on("uncaughtException", (err) => console.error("처리되지 않은 예외:", err));
 
 // 음악(Lavalink) 클라이언트 (Lavalink 서버가 꺼져 있어도 봇은 동작함)
 require("./bot/managers/musicManager").createMusicManager(client);
@@ -94,6 +101,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   try {
     await command.execute(interaction); // 명령어 실행
+    // 마지막 이용 시각 기록 (12개월 미이용 계정 삭제 기준)
+    stmtTouchUser.run(Date.now(), interaction.user.id);
   } catch (error) {
     console.error(error);
     const errorMsg = {
@@ -116,8 +125,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
 client.once(Events.ClientReady, (c) => {
   console.log(`✅ 준비 완료! 계정: ${c.user.tag}`);
 
-  // 주식 업데이트 타이머 시작
-  startScheduler();
+  // 주식 업데이트 타이머 시작 (장중인데 오늘 개장 틱이 없으면 먼저 실행)
+  ensureOpenTick().catch((err) => console.error("개장 시세 반영 오류:", err));
+  startScheduler(true);
+
+  // 이전 실행에서 정산되지 않은 블랙잭 베팅은 전액 돌려준다
+  const refunded = require("./bot/managers/bets").refundPending();
+  if (refunded) console.log(`💸 정산되지 않은 베팅 ${refunded}건을 돌려줬어요.`);
+
+  // 급식 알림 (설정한 서버에 평일 07:30)
+  require("./bot/managers/lunchNotice").startLunchNotice(client);
+
+  // 개인정보 보유 기간 정리 (12개월 미이용 계정, 오래된 로그)
+  require("./bot/managers/maintenance").startMaintenance();
 
   // 야구 게임 이벤트 연동
   const baseballGuessEvent = require("./bot/events/messageCreate/baseballGuess");
@@ -129,12 +149,13 @@ client.once(Events.ClientReady, (c) => {
   }
 
   // ================== 정시마다 동작하는 스케줄러 로직 ==================
-  function startScheduler() {
+  function startScheduler(first = false) {
     const tickMs = TICK_MINUTES * 60 * 1000;
     let delayMs = tickMs - (Date.now() % tickMs); // 다음 경계(예: 1시간 단위)까지 남은 시간
 
     // 경계 직후(30초 이내) 켜졌을 때 즉시 연속 실행되는 것을 방지하기 위해 한 틱 스킵
-    if (delayMs < 30 * 1000) delayMs += tickMs;
+    // (처음 시작할 때는 스킵하지 않는다 — 곧 오는 개장 06:00 틱을 놓치면 안 된다)
+    if (!first && delayMs < 30 * 1000) delayMs += tickMs;
 
     const next = new Date(Date.now() + delayMs);
     console.log(

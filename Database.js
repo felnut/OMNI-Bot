@@ -35,14 +35,6 @@ db.exec(`
     )
 `);
 
-db.exec(`
-    CREATE TABLE IF NOT EXISTS bank (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        amount INTEGER DEFAULT 0,
-        failed_attempts INTEGER DEFAULT 0
-    )
-`);
-
 // stocks 테이블
 db.exec(`
     CREATE TABLE IF NOT EXISTS stocks (
@@ -200,6 +192,62 @@ db.exec(`
   )
 `);
 
+// 마지막 이용 시각(ms) — 12개월 미이용 계정 삭제 기준 (개인정보 처리방침 1항)
+ensureColumn("user", "last_active INTEGER DEFAULT 0");
+db.prepare("UPDATE user SET last_active = ? WHERE last_active = 0").run(Date.now());
+
+// 송금 기록 — 일일 송금 한도 계산용 (송금 후 7일이 지난 기록은 정리)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS transfer_log (
+    sender_id TEXT NOT NULL,
+    receiver_id TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  )
+`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_transfer_sender ON transfer_log(sender_id, created_at);");
+
+// 서버 D-day (/디데이) — 이름·날짜·만든 사람. 날짜가 30일 지나면 정기 정리에서 삭제
+db.exec(`
+  CREATE TABLE IF NOT EXISTS dday (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    date TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )
+`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_dday_guild_date ON dday(guild_id, date);");
+
+// 급식 알림 채널 설정 (/급식알림) — 서버당 1개, 채널 ID와 마지막 전송일만 저장
+db.exec(`
+  CREATE TABLE IF NOT EXISTS lunch_notice (
+    guild_id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL,
+    last_sent TEXT
+  )
+`);
+
+// 서버별 등록 학교 (/학교등록) — 시간표·학사일정·급식 조회에 사용
+db.exec(`
+  CREATE TABLE IF NOT EXISTS guild_school (
+    guild_id TEXT PRIMARY KEY,
+    atpt_code TEXT NOT NULL,
+    school_code TEXT NOT NULL,
+    school_name TEXT NOT NULL,
+    school_kind TEXT NOT NULL,
+    registered_by TEXT,
+    registered_at INTEGER NOT NULL
+  )
+`);
+// 이전 버전(학교 고정) 사용자를 위해, 운영 서버(GUILD_ID)에 기존 학교를 한 번 자동 등록한다
+if (process.env.GUILD_ID && !isTest) {
+  db.prepare(
+    "INSERT OR IGNORE INTO guild_school (guild_id, atpt_code, school_code, school_name, school_kind, registered_by, registered_at) VALUES (?, 'B10', '7011489', '단국대학교부속소프트웨어고등학교', '고등학교', NULL, ?)",
+  ).run(process.env.GUILD_ID, Date.now());
+}
+
 console.log("ℹ️ 마이그레이션 완료");
 
 // ================== 초기 종목 데이터 ==================
@@ -242,13 +290,6 @@ const runSymbolMigrations = db.transaction(() => {
   }
 });
 runSymbolMigrations();
-
-// 은행 Seed
-// bank는 단일 row(id=1)만 사용하도록 고정합니다.
-if (!db.prepare("SELECT 1 FROM bank WHERE id = 1").get()) {
-  db.prepare("INSERT INTO bank (id, amount, failed_attempts) VALUES (1, 0, 0)").run();
-  console.log("✅ bank 초기 데이터 삽입 (id=1)");
-}
 
 // stocks Seed (완전히 비어있을 때만)
 const stockCount = db.prepare("SELECT COUNT(*) as cnt FROM stocks").get().cnt;

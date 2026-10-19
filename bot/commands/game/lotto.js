@@ -11,15 +11,15 @@ const db = require("../../../Database");
 const { getUserOrFail } = require("../utils/user");
 const cache = require("../utils/cache");
 
-// 당첨 구성표 [금액, 확률]. 기대 당첨금 ≈ 493원 (복권값 500원 → 환수율 약 98.6%, 하우스 엣지 약 1.4%)
-// 손실(<500원) 52% / 본전(500원) 12% / 이익(>500원) 36% → 잃고 얻는 빈도가 균형을 이룸
+// 당첨 구성표 [금액, 확률]. 기대 당첨금 ≈ 470원 (복권값 500원 → 환수율 약 94%)
+// 손실(<500원) 56% / 본전(500원) 12% / 이익(>500원) 32%
 const LOTTO_TABLE = [
-  [200, 0.32],
+  [200, 0.358],
   [300, 0.2],
   [500, 0.12],
   [600, 0.15],
   [700, 0.067],
-  [800, 0.09],
+  [800, 0.052],
   [1200, 0.04],
   [2500, 0.01],
   [6000, 0.0025],
@@ -27,6 +27,16 @@ const LOTTO_TABLE = [
   [50000, 0.00008],
 ];
 const LOTTO_TOTAL = LOTTO_TABLE.reduce((sum, [, p]) => sum + p, 0);
+
+/** 가중치 추첨 (낮은 금액이 더 잘 나옴) */
+function drawPrize() {
+  let rand = Math.random() * LOTTO_TOTAL;
+  for (const [amount, p] of LOTTO_TABLE) {
+    rand -= p;
+    if (rand <= 0) return amount;
+  }
+  return LOTTO_TABLE[0][0];
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -48,40 +58,18 @@ module.exports = {
       return interaction.reply({ content, flags: MessageFlags.Ephemeral });
     }
 
-    // 500원 차감
-    db.prepare("UPDATE user SET money = money - ? WHERE user_id = ?").run(
-      useFee,
-      user.user_id,
-    );
-    user.money -= useFee;
-    cache.del(`leaderboard:money:myRank:${user.user_id}`);
-    cache.del("leaderboard:money:top10");
-
-    // ==================== 당첨금 뽑기 (가중치 적용) ====================
-    // 낮은 금액이 더 잘 나오게 설계된 가중치 랜덤
-    let rand = Math.random() * LOTTO_TOTAL;
-    let prize = LOTTO_TABLE[0][0];
-
-    for (const [amount, p] of LOTTO_TABLE) {
-      rand -= p;
-      if (rand <= 0) {
-        prize = amount;
-        break;
-      }
-    }
-
     // 구매 완료 화면 (긁기 버튼)
     const buyEmbed = new EmbedBuilder()
-      .setTitle("🎫 복권 구매 완료!")
+      .setTitle("🎫 복권 준비 완료!")
       .setColor("#FFD700")
       .setDescription("버튼 눌러서 복권 긁어보세요!\n낮은 금액이 더 잘 나와요~ (200 ~ 50,000원)")
       .addFields(
         {
           name: "🧾 결제",
-          value: `500원 차감\n잔액: **${user.money.toLocaleString()}원**`,
+          value: `긁을 때 500원이 차감돼요\n잔액: **${user.money.toLocaleString()}원**`,
           inline: true,
         },
-        { name: "⏰ 제한시간", value: "60초 안에 클릭!", inline: true },
+        { name: "⏰ 제한시간", value: "60초 안에 클릭! (안 누르면 요금 없음)", inline: true },
       );
 
     const row = new ActionRowBuilder().addComponents(
@@ -109,14 +97,18 @@ module.exports = {
       claimed = true;
       await i.deferUpdate();
 
-      // 당첨금 지급
-      db.prepare("UPDATE user SET money = money + ? WHERE user_id = ?").run(
-        prize,
-        user.user_id,
-      );
-      const newMoney = user.money + prize;
-      cache.del(`leaderboard:money:myRank:${user.user_id}`);
-      cache.del("leaderboard:money:top10");
+      // 긁는 순간 요금 차감 + 당첨금 지급을 한 번에 처리 (잔액이 부족하면 취소)
+      const prize = drawPrize();
+      const paid = db
+        .prepare("UPDATE user SET money = money - ? + ? WHERE user_id = ? AND money >= ?")
+        .run(useFee, prize, user.user_id, useFee).changes;
+      if (!paid) {
+        await message.edit({ content: "💸 잔액이 부족해서 복권을 긁을 수 없어요.", embeds: [], components: [] });
+        collector.stop();
+        return;
+      }
+      const newMoney = db.prepare("SELECT money FROM user WHERE user_id = ?").get(user.user_id).money;
+      cache.invalidateMoney(user.user_id);
 
       const resultEmbed = new EmbedBuilder()
         .setTitle("💰 당첨 결과!")
@@ -133,20 +125,12 @@ module.exports = {
       collector.stop();
     });
 
-    // 시간 초과 시 환불
-    collector.on("end", async (collected, reason) => {
-      if (reason === "time" && !claimed) {
-        db.prepare("UPDATE user SET money = money + ? WHERE user_id = ?").run(
-          useFee,
-          user.user_id,
-        );
-        cache.del(`leaderboard:money:myRank:${user.user_id}`);
-        cache.del("leaderboard:money:top10");
-        await interaction.editReply({
-          content: "시간이 지나서 취소됐어요~ 500원은 다시 돌려드렸습니다!",
-          embeds: [],
-          components: [],
-        });
+    // 시간 초과: 요금은 아직 받지 않았으므로 환불 없이 버튼만 정리
+    collector.on("end", async () => {
+      if (!claimed) {
+        await interaction
+          .editReply({ content: "시간이 지나서 취소됐어요~ 요금은 받지 않았어요!", embeds: [], components: [] })
+          .catch(() => {});
       }
     });
   },
