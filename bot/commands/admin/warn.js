@@ -13,8 +13,8 @@ const stmtDel = db.prepare("DELETE FROM warning WHERE id = ?");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("경고")
-    .setDescription(`[관리자 전용] 유저 경고 관리 (${mod.AUTO_TIMEOUT_AT}회 누적마다 24시간 타임아웃)`)
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // 관리자에게만 보임
+    .setDescription(`유저 경고 관리 (${mod.AUTO_TIMEOUT_AT}회 누적마다 24시간 타임아웃) · 지급/차감은 서버 운영자 전용`)
+    // 기본 권한을 두지 않는다: 조회는 누구나 쓸 수 있고, 지급·차감은 실행할 때 서버 운영자급인지 확인한다
     .setDMPermission(false)
     .addSubcommand((s) =>
       s
@@ -37,12 +37,20 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    const denied = mod.checkActor(interaction);
-    if (denied) return interaction.reply({ content: denied, flags: EPHEMERAL });
-
     const sub = interaction.options.getSubcommand();
     const user = interaction.options.getUser("유저");
     const guildId = interaction.guildId;
+
+    if (sub === "조회") {
+      // 조회는 누구나 가능하되, 서버 운영자급이 아니면 본인 기록만 볼 수 있다
+      if (!interaction.inGuild()) return interaction.reply({ content: "❌ 서버 안에서만 사용할 수 있어요.", flags: EPHEMERAL });
+      if (user.id !== interaction.user.id && !mod.isServerManager(interaction)) {
+        return interaction.reply({ content: "❌ 다른 사람의 경고는 서버 소유자 또는 서버 관리 권한이 있는 역할만 볼 수 있어요. 본인 경고는 조회할 수 있어요.", flags: EPHEMERAL });
+      }
+    } else {
+      const denied = mod.checkActor(interaction);
+      if (denied) return interaction.reply({ content: denied, flags: EPHEMERAL });
+    }
 
     if (sub === "조회") {
       const rows = stmtList.all(guildId, user.id);

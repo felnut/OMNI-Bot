@@ -50,10 +50,9 @@ async function getOrSet(key, ttlMs, loaderFn) {
   return value;
 }
 
-/** 돈이 바뀐 유저의 랭킹 캐시를 지운다 (내 순위 + TOP 10) */
-function invalidateMoney(...userIds) {
-  for (const id of userIds) store.delete(`leaderboard:money:myRank:${id}`);
-  store.delete("leaderboard:money:top10");
+/** 돈이 바뀌면 돈 랭킹 캐시(전체·서버별 TOP 10, 내 순위)를 지운다 */
+function invalidateMoney() {
+  delPrefix("leaderboard:money:");
 }
 
 module.exports = {

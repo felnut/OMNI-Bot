@@ -12,31 +12,78 @@ const TIMETABLE_SERVICE = {
   특수학교: "spsTimetable",
 };
 
-const stmtSchool = db.prepare("SELECT * FROM guild_school WHERE guild_id = ?");
+const MAX_SCHOOLS = 5; // 서버당 등록할 수 있는 학교 수
 
-/** 서버에 등록된 학교. 없으면 null */
-function getSchool(guildId) {
-  if (!guildId) return null;
-  const r = stmtSchool.get(guildId);
-  if (!r) return null;
+// 기본 학교가 맨 앞, 그 다음은 먼저 등록한 순서
+const stmtSchools = db.prepare("SELECT * FROM guild_schools WHERE guild_id = ? ORDER BY is_default DESC, registered_at ASC");
+
+function toSchool(r) {
   return {
     atpt: r.atpt_code,
     code: r.school_code,
     name: r.school_name,
     kind: r.school_kind,
+    isDefault: Boolean(r.is_default),
     timetableService: TIMETABLE_SERVICE[r.school_kind] ?? null,
     maxGrade: r.school_kind === "초등학교" ? 6 : 3,
   };
 }
 
-/** 등록된 학교를 돌려준다. 없으면 안내 메시지를 보내고 null (명령어 맨 앞에서 호출) */
+/** 서버에 등록된 모든 학교 (기본 학교가 맨 앞) */
+function getSchools(guildId) {
+  if (!guildId) return [];
+  return stmtSchools.all(guildId).map(toSchool);
+}
+
+/** 서버의 학교 하나. code가 없으면 기본 학교. 없으면 null */
+function getSchool(guildId, code = null) {
+  const list = getSchools(guildId);
+  return (code ? list.find((s) => s.code === code) : list[0]) ?? null;
+}
+
+/** 급식·시간표·학사일정 같은 명령어에 '학교' 선택 옵션(자동완성)을 붙인다 */
+function addSchoolOption(builder) {
+  return builder.addStringOption((o) =>
+    o
+      .setName("학교")
+      .setDescription("학교 선택 (여러 곳을 등록한 경우. 비우면 기본 학교)")
+      .setRequired(false)
+      .setAutocomplete(true),
+  );
+}
+
+/** '학교' 옵션의 자동완성: 이 서버에 등록된 학교 목록을 보여준다 */
+async function schoolAutocomplete(interaction) {
+  const typed = String(interaction.options.getFocused() ?? "").trim();
+  const choices = getSchools(interaction.guildId)
+    .filter((s) => !typed || s.name.includes(typed))
+    .slice(0, 25)
+    .map((s) => ({ name: `${s.isDefault ? "⭐ " : ""}${s.name} (${s.kind})`.slice(0, 100), value: s.code }));
+  await interaction.respond(choices);
+}
+
+/**
+ * 이번 명령에 쓸 학교를 돌려준다 (명령어 맨 앞에서 호출).
+ * '학교' 옵션으로 고른 학교, 없으면 기본 학교. 학교가 없거나 잘못 골랐으면 안내 메시지를 보내고 null
+ */
 async function requireSchool(interaction) {
-  const school = getSchool(interaction.guildId);
-  if (!school) {
+  const schools = getSchools(interaction.guildId);
+  if (!schools.length) {
     await interaction.reply({
-      content: "🏫 이 서버에 등록된 학교가 없어요. 관리자가 `/학교등록 검색`으로 먼저 학교를 등록해 주세요.",
+      content: "🏫 이 서버에 등록된 학교가 없어요. `/학교등록 검색`으로 먼저 학교를 등록해 주세요.",
       flags: MessageFlags.Ephemeral,
     });
+    return null;
+  }
+  const picked = interaction.options.getString("학교");
+  if (!picked) return schools[0];
+  const school = schools.find((s) => s.code === picked);
+  if (!school) {
+    await interaction.reply({
+      content: "❌ 이 서버에 등록되지 않은 학교예요. `학교` 칸에서 목록에 뜨는 학교를 골라 주세요.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return null;
   }
   return school;
 }
@@ -88,4 +135,15 @@ async function neisRows(school, service, params = {}, ttlMs = 30 * 60 * 1000) {
   });
 }
 
-module.exports = { WEEKDAYS, getSchool, requireSchool, kstDate, shortDate, neisRows };
+module.exports = {
+  WEEKDAYS,
+  MAX_SCHOOLS,
+  getSchool,
+  getSchools,
+  requireSchool,
+  addSchoolOption,
+  schoolAutocomplete,
+  kstDate,
+  shortDate,
+  neisRows,
+};

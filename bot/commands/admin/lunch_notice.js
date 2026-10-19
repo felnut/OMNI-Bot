@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags } = require("discord.js");
 const db = require("../../../Database");
-const { isServerAdmin } = require("../utils/perm");
+const { isServerManager } = require("../utils/perm");
 
 const EPHEMERAL = MessageFlags.Ephemeral;
 
@@ -13,8 +13,7 @@ const stmtDel = db.prepare("DELETE FROM lunch_notice WHERE guild_id = ?");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("급식알림")
-    .setDescription("[관리자 전용] 평일 아침 7시 30분에 오늘 급식을 자동으로 올려요")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // 관리자에게만 보임
+    .setDescription("평일 아침 7시 30분에 오늘 급식을 자동으로 올려요 (설정·해제는 서버 운영자 전용)")
     .setDMPermission(false)
     .addSubcommand((s) =>
       s
@@ -28,10 +27,11 @@ module.exports = {
     .addSubcommand((s) => s.setName("확인").setDescription("현재 설정 보기")),
 
   async execute(interaction) {
-    if (!interaction.inGuild() || !isServerAdmin(interaction)) {
-      return interaction.reply({ content: "❌ 서버 소유자 또는 관리자만 사용할 수 있어요.", flags: EPHEMERAL });
-    }
     const sub = interaction.options.getSubcommand();
+    // 확인은 누구나, 설정·해제는 서버 운영자급만
+    if (!interaction.inGuild() || (sub !== "확인" && !isServerManager(interaction))) {
+      return interaction.reply({ content: "❌ 서버 소유자 또는 서버 관리 권한이 있는 역할만 사용할 수 있어요.", flags: EPHEMERAL });
+    }
 
     if (sub === "설정") {
       const ch = interaction.options.getChannel("채널");

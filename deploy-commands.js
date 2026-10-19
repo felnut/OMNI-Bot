@@ -102,16 +102,29 @@ async function deployCommands() {
   }
 
   try {
-    console.log(`${commands.length}개의 명령어를 디스코드에 등록하는 중...`);
-    // 지정된 서버에 명령어 배열 전송
-    await rest.put(
-      Routes.applicationGuildCommands(
-        process.env.CLIENT_ID,
-        process.env.GUILD_ID,
-      ),
-      { body: commands },
-    );
-    console.log("✅ 명령어 등록 성공!");
+    // 등록 대상: .env의 GUILD_ID + 봇이 들어가 있는 모든 서버 (서버마다 따로 등록해야 명령어가 갱신된다)
+    const targets = new Map([[process.env.GUILD_ID, "GUILD_ID"]]);
+    try {
+      const joined = await rest.get(Routes.userGuilds(), { query: new URLSearchParams({ limit: "200" }) });
+      for (const g of joined) if (!targets.has(g.id)) targets.set(g.id, g.name);
+    } catch (e) {
+      console.warn("참여 중인 서버 목록을 가져오지 못해 GUILD_ID 서버에만 등록합니다:", e?.message || e);
+    }
+
+    console.log(`${commands.length}개의 명령어를 디스코드에 등록하는 중... (서버 ${targets.size}곳)`);
+    let failed = 0;
+    for (const [guildId, label] of targets) {
+      try {
+        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId), { body: commands });
+        console.log(`  ✅ ${label} (${guildId})`);
+      } catch (e) {
+        failed += 1;
+        console.error(`  ❌ ${label} (${guildId}): ${e?.message || e}`);
+        if (e?.status === 401) throw e; // 토큰 문제는 바로 중단
+      }
+    }
+    if (failed === targets.size) return false;
+    console.log(failed ? `⚠️ 일부 서버(${failed}곳)는 등록에 실패했어요.` : "✅ 명령어 등록 성공!");
     return true; // 성공 반환
   } catch (error) {
     if (error?.status === 401) {

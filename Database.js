@@ -227,23 +227,54 @@ db.exec(`
   )
 `);
 
-// 서버별 등록 학교 (/학교등록) — 시간표·학사일정·급식 조회에 사용
+// 서버별 등록 학교 (/학교등록) — 시간표·학사일정·급식 조회에 사용. 서버마다 여러 학교를 등록할 수 있다
+const tableExists = (name) => Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name));
+const schoolsTableIsNew = !tableExists("guild_schools");
 db.exec(`
-  CREATE TABLE IF NOT EXISTS guild_school (
-    guild_id TEXT PRIMARY KEY,
-    atpt_code TEXT NOT NULL,
+  CREATE TABLE IF NOT EXISTS guild_schools (
+    guild_id TEXT NOT NULL,
     school_code TEXT NOT NULL,
+    atpt_code TEXT NOT NULL,
     school_name TEXT NOT NULL,
     school_kind TEXT NOT NULL,
     registered_by TEXT,
-    registered_at INTEGER NOT NULL
+    registered_at INTEGER NOT NULL,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (guild_id, school_code)
   )
 `);
-// 이전 버전(학교 고정) 사용자를 위해, 운영 서버(GUILD_ID)에 기존 학교를 한 번 자동 등록한다
-if (process.env.GUILD_ID && !isTest) {
-  db.prepare(
-    "INSERT OR IGNORE INTO guild_school (guild_id, atpt_code, school_code, school_name, school_kind, registered_by, registered_at) VALUES (?, 'B10', '7011489', '단국대학교부속소프트웨어고등학교', '고등학교', NULL, ?)",
-  ).run(process.env.GUILD_ID, Date.now());
+if (schoolsTableIsNew) {
+  if (tableExists("guild_school")) {
+    // 서버당 1개만 저장하던 이전 표의 내용을 옮기고 이전 표는 지운다 (한 번만 실행)
+    db.exec(`
+      INSERT OR IGNORE INTO guild_schools (guild_id, school_code, atpt_code, school_name, school_kind, registered_by, registered_at, is_default)
+      SELECT guild_id, school_code, atpt_code, school_name, school_kind, registered_by, registered_at, 1 FROM guild_school;
+      DROP TABLE guild_school;
+    `);
+  } else if (process.env.GUILD_ID) {
+    // 처음 만든 DB라면, 운영 서버(GUILD_ID)에 기본 학교를 한 번 등록한다
+    db.prepare(
+      "INSERT OR IGNORE INTO guild_schools (guild_id, school_code, atpt_code, school_name, school_kind, registered_by, registered_at, is_default) VALUES (?, '7011489', 'B10', '단국대학교부속소프트웨어고등학교', '고등학교', NULL, ?, 1)",
+    ).run(process.env.GUILD_ID, Date.now());
+  }
+}
+
+// 서버별 이용 기록 — '현재 서버' 랭킹용 (서버 ID, 사용자 ID, 마지막 이용 시각). 사용자 삭제 시 함께 삭제
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_guild (
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    last_seen INTEGER NOT NULL,
+    PRIMARY KEY (guild_id, user_id)
+  )
+`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_user_guild_user ON user_guild(user_id);");
+// 이전 버전에는 서버 구분이 없었으므로, 기존 이용자는 운영 서버(GUILD_ID)에서 이용한 것으로 한 번 등록한다
+if (process.env.GUILD_ID) {
+  db.prepare("INSERT OR IGNORE INTO user_guild (guild_id, user_id, last_seen) SELECT ?, user_id, ? FROM user").run(
+    process.env.GUILD_ID,
+    Date.now(),
+  );
 }
 
 console.log("ℹ️ 마이그레이션 완료");
@@ -339,6 +370,6 @@ initialStocks.forEach((stock) => {
 
 console.log("✅ 이름·심볼 동기화 완료!");
 
-console.log(`✅ Connect Database Success! (${dbName})`);
+console.log("✅ Connect Database Success! (game.db)");
 
 module.exports = db;

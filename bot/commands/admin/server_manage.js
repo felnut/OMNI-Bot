@@ -9,7 +9,7 @@ const {
 const EPHEMERAL = MessageFlags.Ephemeral;
 const TEXT_TYPES = [ChannelType.GuildText, ChannelType.GuildAnnouncement];
 
-const { isServerAdmin } = require("../utils/perm");
+const { isServerManager } = require("../utils/perm");
 
 /** 봇이 해당 채널에서 필요한 권한을 가졌는지 확인해 부족한 권한 이름을 돌려준다 */
 function missingBotPerms(channel, perms) {
@@ -20,8 +20,8 @@ function missingBotPerms(channel, perms) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("서버관리")
-    .setDescription("[관리자 전용] 메시지 정리·슬로우모드·채널 잠금·공지")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // 관리자에게만 보임
+    .setDescription("[서버 운영자 전용] 메시지 정리·슬로우모드·채널 잠금·공지")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild) // 서버 관리 권한(관리자 포함)이 있는 사람에게만 보임
     .setDMPermission(false)
     .addSubcommand((s) =>
       s
@@ -48,12 +48,12 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!interaction.inGuild() || !isServerAdmin(interaction)) {
-      return interaction.reply({ content: "❌ 서버 소유자 또는 관리자만 사용할 수 있어요.", flags: EPHEMERAL });
+    if (!interaction.inGuild() || !isServerManager(interaction)) {
+      return interaction.reply({ content: "❌ 서버 소유자 또는 서버 관리 권한이 있는 역할만 사용할 수 있어요.", flags: EPHEMERAL });
     }
     const sub = interaction.options.getSubcommand();
     const channel = interaction.channel;
-    console.log(`[서버관리] ${sub} (서버 ${interaction.guildId}, 실행 ${interaction.user.id})`);
+    console.log(`[서버관리] ${sub} (서버 ${interaction.guildId})`);
 
     try {
       if (sub === "청소") {
@@ -76,7 +76,7 @@ module.exports = {
         const miss = missingBotPerms(channel, [[PermissionFlagsBits.ManageChannels, "채널 관리"]]);
         if (miss.length) return interaction.reply({ content: `❌ 봇에게 이 채널의 **${miss.join(", ")}** 권한이 필요해요.`, flags: EPHEMERAL });
         const sec = interaction.options.getInteger("초");
-        await channel.setRateLimitPerUser(sec, `슬로우모드 설정 (${interaction.user.id})`);
+        await channel.setRateLimitPerUser(sec, `슬로우모드 설정 (${interaction.user.username})`);
         return interaction.reply(sec ? `🐢 이 채널에 슬로우모드 **${sec}초**를 설정했어요.` : "🐇 슬로우모드를 해제했어요.");
       }
 
@@ -88,7 +88,7 @@ module.exports = {
         await channel.permissionOverwrites.edit(
           interaction.guild.roles.everyone,
           { SendMessages: lock ? false : null, SendMessagesInThreads: lock ? false : null },
-          { reason: `${sub} (${interaction.user.id})` },
+          { reason: `${sub} (${interaction.user.username})` },
         );
         return interaction.reply(lock ? "🔒 이 채널을 잠갔어요. (관리자는 계속 쓸 수 있어요)" : "🔓 채널 잠금을 풀었어요.");
       }

@@ -7,8 +7,8 @@ const MAX_MIN = 28 * 24 * 60; // 디스코드 타임아웃 최대 28일
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("타임아웃")
-    .setDescription("[관리자 전용] 유저를 일정 시간 동안 채팅·음성 참여 제한")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // 관리자에게만 보임
+    .setDescription("[서버 운영자 전용] 유저를 일정 시간 동안 채팅·음성 참여 제한")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild) // 서버 관리 권한(관리자 포함)이 있는 사람에게만 보임
     .setDMPermission(false)
     .addSubcommand((s) =>
       s
@@ -43,11 +43,11 @@ module.exports = {
     try {
       if (sub === "설정") {
         const minutes = interaction.options.getInteger("분");
-        await member.timeout(minutes * 60 * 1000, `${reason} (by ${interaction.user.id})`);
+        await member.timeout(minutes * 60 * 1000, `${reason} (by ${interaction.user.username})`);
         await mod.sendModLog(interaction.guild, { action: "타임아웃", targetId: user.id, moderatorId: interaction.user.id, reason, extra: `${minutes}분` });
         return interaction.reply({ content: `🔇 <@${user.id}> 님을 ${minutes}분 동안 타임아웃했어요.`, allowedMentions: { parse: [] } });
       }
-      await member.timeout(null, `타임아웃 해제 (by ${interaction.user.id})`);
+      await member.timeout(null, `타임아웃 해제 (by ${interaction.user.username})`);
       await mod.sendModLog(interaction.guild, { action: "타임아웃 해제", targetId: user.id, moderatorId: interaction.user.id, reason: "해제" });
       return interaction.reply({ content: `🔊 <@${user.id}> 님의 타임아웃을 풀었어요.`, allowedMentions: { parse: [] } });
     } catch (e) {

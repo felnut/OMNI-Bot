@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -29,6 +29,6 @@ module.exports = {
         { name: "역할", value: `${Math.max(member.roles.cache.size - 1, 0)}개`, inline: true },
       );
     }
-    return interaction.reply({ embeds: [embed] });
+    return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },
 };

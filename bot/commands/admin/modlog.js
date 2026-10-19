@@ -6,8 +6,8 @@ const EPHEMERAL = MessageFlags.Ephemeral;
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("로그채널설정")
-    .setDescription("[관리자 전용] 제재·경고 기록을 남길 채널 설정")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // 관리자에게만 보임
+    .setDescription("[서버 운영자 전용] 제재·경고 기록을 남길 채널 설정")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild) // 서버 관리 권한(관리자 포함)이 있는 사람에게만 보임
     .setDMPermission(false)
     .addChannelOption((o) =>
       o.setName("채널").setDescription("비워 두면 설정을 해제해요").addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),

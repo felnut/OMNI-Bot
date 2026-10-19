@@ -617,7 +617,7 @@ function resetStocksOnce() {
   cache.del("stocks:snapshotRows");
   cache.del("stocks:recentNews");
   cache.del("leaderboard:stock_value:top10");
-  for (const k of ["leaderboard:money:top10"]) cache.del(k);
+  cache.delPrefix("leaderboard:money:");
   return report;
 }
 
@@ -645,7 +645,7 @@ function buildStockResetNoticeText(report) {
     "달라진 점",
     "- 장 시간: 평일 06:00~23:00 (1시간마다 시세 갱신), 밤 11시~아침 6시와 주말·국경일에는 거래 중지",
     "- 국경일(삼일절·제헌절·광복절·개천절·한글날) 휴장",
-    "- 시장 분위기·종목별 민감도(베타)·전일 대비 ±30% 가격 제한폭·단붕 지수 도입",
+    "- 시장 분위기·종목별 민감도(베타)·전일 대비 ±30% 가격 제한폭·OMNI 지수 도입",
   ].join("\n");
 }
 
@@ -767,7 +767,7 @@ function fmtPct(rate) {
   return `${arrow} ${rate > 0 ? "+" : ""}${pct}%`;
 }
 
-/** 단붕 지수: 7종목 기준가 대비 평균 × 1000 */
+/** OMNI 지수: 7종목 기준가 대비 평균 × 1000 */
 function computeIndex(stocks, usePrev) {
   let sum = 0;
   let n = 0;
@@ -800,8 +800,8 @@ function createStockUpdateEmbed() {
     .setDescription(
       `${status.label}\n\n` +
         `시장 분위기: ${regime.label}\n` +
-        `📊 **단붕 지수 ${idx.toFixed(1)}** (${fmtPct(idxRate)})\n` +
-        "-# 단붕 지수 = 7개 종목 주가를 시작 가격과 비교한 평균 (시작 = 1000)",
+        `📊 **OMNI 지수 ${idx.toFixed(1)}** (${fmtPct(idxRate)})\n` +
+        "-# OMNI 지수 = 7개 종목 주가를 시작 가격과 비교한 평균 (시작 = 1000)",
     );
 
   stocks.forEach((s) => {

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { kstDate, shortDate, neisRows, requireSchool } = require("./neis");
+const { kstDate, shortDate, neisRows, requireSchool, addSchoolOption, schoolAutocomplete } = require("./neis");
 
 /** 범위 선택지 → [시작, 끝] (YYYYMMDD) */
 function rangeOf(kind) {
@@ -58,3 +58,7 @@ module.exports = {
     }
   },
 };
+
+// 여러 학교를 등록한 서버에서 학교를 고를 수 있게 한다 (비우면 기본 학교)
+addSchoolOption(module.exports.data);
+module.exports.autocomplete = schoolAutocomplete;

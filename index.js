@@ -31,7 +31,12 @@ const {
 } = require("./bot/managers/stockManager");
 
 // DB 자동 연결 (초기화 및 마이그레이션 실행)
-const stmtTouchUser = require("./Database").prepare("UPDATE user SET last_active = ? WHERE user_id = ?");
+const _db = require("./Database");
+const stmtTouchUser = _db.prepare("UPDATE user SET last_active = ? WHERE user_id = ?");
+// 이용한 서버 기록 (지갑이 있는 이용자만) — '현재 서버' 랭킹용
+const stmtTouchGuild = _db.prepare(
+  "INSERT INTO user_guild (guild_id, user_id, last_seen) SELECT ?, user_id, ? FROM user WHERE user_id = ? ON CONFLICT(guild_id, user_id) DO UPDATE SET last_seen = excluded.last_seen",
+);
 
 // 처리되지 않은 오류로 봇 전체가 종료되지 않도록 기록만 남긴다
 process.on("unhandledRejection", (reason) => console.error("처리되지 않은 Promise 거절:", reason));
@@ -101,7 +106,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await command.execute(interaction); // 명령어 실행
     // 마지막 이용 시각 기록 (12개월 미이용 계정 삭제 기준)
-    stmtTouchUser.run(Date.now(), interaction.user.id);
+    const now = Date.now();
+    stmtTouchUser.run(now, interaction.user.id);
+    if (interaction.guildId) stmtTouchGuild.run(interaction.guildId, now, interaction.user.id);
   } catch (error) {
     console.error(error);
     const errorMsg = {

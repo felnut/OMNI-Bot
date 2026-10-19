@@ -30,11 +30,12 @@ const stmtLogSet = db.prepare(
 );
 const stmtLogClear = db.prepare("DELETE FROM mod_config WHERE guild_id = ?");
 
-const { isServerAdmin } = require("../commands/utils/perm");
+const { isServerManager } = require("../commands/utils/perm");
 
-/** 실행 가능 여부 확인. 문제가 있으면 안내 문구를 돌려주고, 괜찮으면 null */
+/** 실행 가능 여부 확인(서버 소유자·관리자·서버 관리 권한 역할만). 문제가 있으면 안내 문구를 돌려주고, 괜찮으면 null */
 function checkActor(interaction) {
-  if (!interaction.inGuild() || !isServerAdmin(interaction)) return "❌ 서버 소유자 또는 관리자만 사용할 수 있어요.";
+  if (!interaction.inGuild()) return "❌ 서버 안에서만 사용할 수 있어요.";
+  if (!isServerManager(interaction)) return "❌ 서버 소유자 또는 서버 관리 권한이 있는 역할만 사용할 수 있어요.";
   return null;
 }
 
@@ -66,7 +67,7 @@ async function sendModLog(guild, { action, targetId, moderatorId, reason, extra 
       .setColor("#e67e22")
       .setTitle(`🛡️ ${action}`)
       .addFields(
-        { name: "대상", value: `<@${targetId}> (${targetId})`, inline: true },
+        { name: "대상", value: `<@${targetId}>`, inline: true },
         { name: "처리자", value: `<@${moderatorId}>`, inline: true },
         { name: "사유", value: reasonOf(reason) },
       )
@@ -85,7 +86,7 @@ module.exports = {
   stmtLogGet,
   stmtLogSet,
   stmtLogClear,
-  isServerAdmin,
+  isServerManager,
   checkActor,
   checkTarget,
   reasonOf,

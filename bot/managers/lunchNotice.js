@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const db = require("../../Database");
-const { kstDate, neisRows, getSchool } = require("../commands/utils/neis");
+const { kstDate, neisRows, getSchools } = require("../commands/utils/neis");
 
 // 평일 급식 알림: 관리자가 /급식알림 설정으로 채널을 정하면 아침에 오늘 급식을 올린다 (이용자 정보 없음, 채널 ID만 저장)
 const SEND_FROM_MIN = 7 * 60 + 30; // 07:30
@@ -44,20 +44,26 @@ async function tick(client) {
   if (!pending.length) return;
 
   for (const r of pending) {
-    const school = getSchool(r.guild_id);
-    if (!school) continue; // 학교가 등록되지 않은 서버
-    let embed;
-    try {
-      embed = await buildLunchEmbed(school, now.ymd);
-    } catch (e) {
-      console.error("급식 알림 조회 오류:", e.message);
-      continue; // 다음 확인 때 다시 시도
+    const schools = getSchools(r.guild_id);
+    if (!schools.length) continue; // 학교가 등록되지 않은 서버
+    // 등록된 학교마다 오늘 급식을 모아 한 번에 올린다 (한 학교가 조회 실패해도 나머지는 올린다)
+    const embeds = [];
+    let failed = 0;
+    for (const school of schools) {
+      try {
+        const e = await buildLunchEmbed(school, now.ymd);
+        if (e) embeds.push(e);
+      } catch (err) {
+        failed += 1;
+        console.error("급식 알림 조회 오류:", err.message);
+      }
     }
+    if (failed === schools.length) continue; // 전부 실패했으면 다음 확인 때 다시 시도
     stmtSent.run(now.iso, r.guild_id); // 먼저 표시해 중복 전송 방지
-    if (!embed) continue; // 급식 없는 날(휴업일 등)
+    if (!embeds.length) continue; // 급식 없는 날(휴업일 등)
     try {
       const ch = await client.channels.fetch(r.channel_id);
-      await ch.send({ embeds: [embed], allowedMentions: { parse: [] } });
+      await ch.send({ embeds, allowedMentions: { parse: [] } });
     } catch (e) {
       console.error(`급식 알림 전송 실패 (서버 ${r.guild_id}):`, e.message);
       if (e.code === 10003 || e.code === 50001) stmtRemove.run(r.guild_id); // 채널 삭제·접근 불가면 설정 해제

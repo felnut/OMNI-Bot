@@ -8,4 +8,14 @@ function isServerAdmin(interaction) {
   );
 }
 
-module.exports = { isServerAdmin };
+/**
+ * 서버 운영자급인지: 서버 소유자, 관리자(Administrator), 또는 '서버 관리(ManageGuild)' 권한이 있는 역할(매니저)
+ * (서버 설정·제재 같은 서버 운영 명령에 사용)
+ */
+function isServerManager(interaction) {
+  return Boolean(
+    isServerAdmin(interaction) || interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild),
+  );
+}
+
+module.exports = { isServerAdmin, isServerManager };

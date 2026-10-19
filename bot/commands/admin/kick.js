@@ -6,8 +6,8 @@ const EPHEMERAL = MessageFlags.Ephemeral;
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("추방")
-    .setDescription("[관리자 전용] 유저를 서버에서 추방 (다시 초대받으면 들어올 수 있어요)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // 관리자에게만 보임
+    .setDescription("[서버 운영자 전용] 유저를 서버에서 추방 (다시 초대받으면 들어올 수 있어요)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild) // 서버 관리 권한(관리자 포함)이 있는 사람에게만 보임
     .setDMPermission(false)
     .addUserOption((o) => o.setName("유저").setDescription("대상").setRequired(true))
     .addStringOption((o) => o.setName("사유").setDescription("사유").setMaxLength(200)),
@@ -27,7 +27,7 @@ module.exports = {
 
     const reason = mod.reasonOf(interaction.options.getString("사유"));
     try {
-      await member.kick(`${reason} (by ${interaction.user.id})`);
+      await member.kick(`${reason} (by ${interaction.user.username})`);
       await mod.sendModLog(interaction.guild, { action: "추방", targetId: user.id, moderatorId: interaction.user.id, reason });
       return interaction.reply({ content: `👢 <@${user.id}> 님을 추방했어요.`, allowedMentions: { parse: [] } });
     } catch (e) {

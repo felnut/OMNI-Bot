@@ -38,7 +38,9 @@ module.exports = {
         .setName("추가")
         .setDescription("D-day 추가")
         .addStringOption((o) => o.setName("이름").setDescription("예: 기말고사 (개인정보는 적지 마세요)").setRequired(true).setMaxLength(30))
-        .addStringOption((o) => o.setName("날짜").setDescription("YYYY-MM-DD 형식 (예: 2026-12-20)").setRequired(true).setMaxLength(10)),
+        .addIntegerOption((o) => o.setName("년").setDescription("예: 2026").setRequired(true).setMinValue(2000).setMaxValue(2100))
+        .addIntegerOption((o) => o.setName("월").setDescription("1~12").setRequired(true).setMinValue(1).setMaxValue(12))
+        .addIntegerOption((o) => o.setName("일").setDescription("1~31").setRequired(true).setMinValue(1).setMaxValue(31)),
     )
     .addSubcommand((s) => s.setName("목록").setDescription("남은 D-day 보기"))
     .addSubcommand((s) =>
@@ -58,10 +60,13 @@ module.exports = {
 
     if (sub === "추가") {
       const name = interaction.options.getString("이름").trim().replace(/\s+/g, " ");
-      const date = interaction.options.getString("날짜").trim();
+      const y = interaction.options.getInteger("년");
+      const m = interaction.options.getInteger("월");
+      const dd = interaction.options.getInteger("일");
+      const date = `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
       if (!name) return interaction.reply({ content: "❌ 이름을 입력해 주세요.", flags: EPHEMERAL });
       if (!isRealDate(date)) {
-        return interaction.reply({ content: "❌ 날짜 형식이 올바르지 않아요. `2026-12-20`처럼 입력해 주세요.", flags: EPHEMERAL });
+        return interaction.reply({ content: `❌ ${y}년 ${m}월 ${dd}일은 없는 날짜예요. 년·월·일을 다시 확인해 주세요.`, flags: EPHEMERAL });
       }
       if (date < today) return interaction.reply({ content: "❌ 이미 지난 날짜예요.", flags: EPHEMERAL });
       if (daysUntil(date, today) > 366 * 3) {

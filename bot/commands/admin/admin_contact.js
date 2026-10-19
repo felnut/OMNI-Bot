@@ -8,7 +8,7 @@ const {
   ComponentType,
 } = require("discord.js");
 const db = require("../../../Database.js");
-const { isServerAdmin } = require("../utils/perm");
+const { isServerManager } = require("../utils/perm");
 
 const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
 const EPHEMERAL = MessageFlags.Ephemeral;
@@ -31,8 +31,8 @@ function maskEmail(email) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("관리자")
-    .setDescription("서버 관리자 연락처 등록 (운영 공지 수동 안내용)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDescription("서버 운영자 연락처 등록 (운영 공지 수동 안내용) · 등록은 서버 운영자 전용")
+    // 기본 권한을 두지 않는다: 확인·해제는 본인 기록만 다루므로 누구나, 등록은 실행할 때 서버 운영자급인지 확인한다
     .setDMPermission(false)
     .addSubcommand((sub) =>
       sub
@@ -49,13 +49,14 @@ module.exports = {
     if (!interaction.inGuild()) {
       return interaction.reply({ content: "❌ 서버 안에서만 사용할 수 있어요.", flags: EPHEMERAL });
     }
-    if (!isServerAdmin(interaction)) {
-      return interaction.reply({ content: "❌ 서버 소유자 또는 관리자 권한이 있는 분만 사용할 수 있어요.", flags: EPHEMERAL });
-    }
-
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
     const sub = interaction.options.getSubcommand();
+    // 등록만 서버 운영자급에게 허용한다. 확인·해제는 자기 자신의 기록만 다루므로 누구나 쓸 수 있다
+    // (역할이 바뀐 뒤에도 본인이 등록한 이메일을 언제든 삭제·철회할 수 있어야 하기 때문)
+    if (sub === "등록" && !isServerManager(interaction)) {
+      return interaction.reply({ content: "❌ 서버 소유자 또는 서버 관리 권한이 있는 역할만 사용할 수 있어요.", flags: EPHEMERAL });
+    }
 
     if (sub === "등록") {
       const email = interaction.options.getString("이메일").trim().toLowerCase();

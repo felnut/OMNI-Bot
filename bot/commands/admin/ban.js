@@ -6,8 +6,8 @@ const EPHEMERAL = MessageFlags.Ephemeral;
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("차단")
-    .setDescription("[관리자 전용] 유저를 서버에서 차단·해제하고 목록 보기")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // 관리자에게만 보임
+    .setDescription("[서버 운영자 전용] 유저를 서버에서 차단·해제하고 목록 보기")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild) // 서버 관리 권한(관리자 포함)이 있는 사람에게만 보임
     .setDMPermission(false)
     .addSubcommand((s) =>
       s
@@ -39,7 +39,7 @@ module.exports = {
 
       const user = interaction.options.getUser("유저");
       if (sub === "해제") {
-        await interaction.guild.bans.remove(user.id, `차단 해제 (by ${interaction.user.id})`);
+        await interaction.guild.bans.remove(user.id, `차단 해제 (by ${interaction.user.username})`);
         await mod.sendModLog(interaction.guild, { action: "차단 해제", targetId: user.id, moderatorId: interaction.user.id, reason: "해제" });
         return interaction.reply({ content: `✅ <@${user.id}> 님의 차단을 풀었어요.`, allowedMentions: { parse: [] } });
       }
@@ -51,7 +51,7 @@ module.exports = {
         return interaction.reply({ content: "❌ 봇이 이 유저를 차단할 수 없어요. (봇 역할이 더 높고 **멤버 차단** 권한이 필요해요)", flags: EPHEMERAL });
       }
       const reason = mod.reasonOf(interaction.options.getString("사유"));
-      await interaction.guild.members.ban(user.id, { reason: `${reason} (by ${interaction.user.id})` });
+      await interaction.guild.members.ban(user.id, { reason: `${reason} (by ${interaction.user.username})` });
       await mod.sendModLog(interaction.guild, { action: "차단", targetId: user.id, moderatorId: interaction.user.id, reason });
       return interaction.reply({ content: `🚫 <@${user.id}> 님을 차단했어요.`, allowedMentions: { parse: [] } });
     } catch (e) {
