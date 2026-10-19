@@ -12,10 +12,18 @@ const stmtUpdateMoneyDelta = db.prepare(
   "UPDATE user SET money = money + ? WHERE user_id = ?",
 );
 
+const DAILY_SEND_LIMIT = 30000; // 24시간 송금 한도
+const stmtSentSince = db.prepare(
+  "SELECT COALESCE(SUM(amount), 0) AS total FROM transfer_log WHERE sender_id = ? AND created_at >= ?",
+);
+const stmtLogTransfer = db.prepare(
+  "INSERT INTO transfer_log (sender_id, receiver_id, amount, created_at) VALUES (?, ?, ?, ?)",
+);
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("송금")
-    .setDescription("다른 유저에게 돈을 보냅니다 📤")
+    .setDescription("다른 유저에게 돈을 보냅니다 (24시간 최대 30,000원) 📤")
     .addUserOption((option) =>
       option.setName("유저").setDescription("돈을 보낼 유저").setRequired(true),
     )
@@ -67,6 +75,17 @@ module.exports = {
       });
     }
 
+    // 부계정으로 몰아주기 방지: 최근 24시간 송금 합계 한도
+    const now = Date.now();
+    const sentToday = stmtSentSince.get(sender.user_id, now - 24 * 60 * 60 * 1000).total;
+    if (sentToday + amount > DAILY_SEND_LIMIT) {
+      const left = Math.max(DAILY_SEND_LIMIT - sentToday, 0);
+      return interaction.reply({
+        content: `📛 송금은 24시간에 최대 ${DAILY_SEND_LIMIT.toLocaleString()}원까지예요. (지금 보낼 수 있는 금액: ${left.toLocaleString()}원)`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     // ====================== 실제 송금 처리 ======================
     const senderNewMoney = sender.money - amount;
     const receiverNewMoney = receiver.money + amount;
@@ -76,12 +95,11 @@ module.exports = {
     const tx = db.transaction(() => {
       stmtUpdateMoneyDelta.run(-amount, sender.user_id);
       stmtUpdateMoneyDelta.run(amount, target.id);
+      stmtLogTransfer.run(sender.user_id, target.id, amount, now);
     });
     tx();
 
-    cache.del(`leaderboard:money:myRank:${sender.user_id}`);
-    cache.del(`leaderboard:money:myRank:${target.id}`);
-    cache.del("leaderboard:money:top10");
+    cache.invalidateMoney(sender.user_id, target.id);
 
     const embed = new EmbedBuilder()
       .setColor("#3498db")

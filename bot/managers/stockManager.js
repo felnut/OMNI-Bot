@@ -666,8 +666,21 @@ function getRandomNews(symbol, up) {
 
 const MARKET_CLOSED_MSG = "장 마감 중에는 거래 불가 (거래 가능: 평일 06:00~23:00, 국경일 제외)";
 
+const OPEN_PENDING_MSG = "개장 시세를 반영하는 중이에요. 잠시 후 다시 시도해 주세요.";
+
+/** 오늘 개장 틱(마감 중 변동의 갭 반영)이 실행되었는가 */
+function isOpenTickDone() {
+  return stmtMarketState.get().last_day === getKST().dayStr;
+}
+
+/** 장중인데 오늘 개장 틱이 아직 없으면(재기동·지연 등) 즉시 실행한다 */
+async function ensureOpenTick() {
+  if (isMarketOpen() && !isOpenTickDone()) await updateStockPrices();
+}
+
 function buyStock(userId, symbol, quantity) {
   if (!isMarketOpen()) throw new Error(MARKET_CLOSED_MSG);
+  if (!isOpenTickDone()) throw new Error(OPEN_PENDING_MSG);
   const tx = db.transaction(() => {
     const stock = stmtSelectStockPrice.get(symbol);
     if (!stock) throw new Error("존재하지 않는 종목입니다.");
@@ -704,6 +717,7 @@ function buyStock(userId, symbol, quantity) {
 
 function sellStock(userId, symbol, quantity) {
   if (!isMarketOpen()) throw new Error(MARKET_CLOSED_MSG);
+  if (!isOpenTickDone()) throw new Error(OPEN_PENDING_MSG);
   const tx = db.transaction(() => {
     const holding = stmtSelectHoldingShares.get(userId, symbol);
     if (!holding || holding.shares < quantity)
@@ -876,7 +890,7 @@ function createMyStocksEmbed(userId, username) {
 
     stockLines.push(
       `**${h.name} (${h.avg_buy_price.toLocaleString()}원)** : ${h.shares}주\n` +
-        `└ 현재가: ${h.price.toLocaleString()}원 (${changeArrow}${changeSign}${profitRate}%)`,
+        `└ 현재가: ${h.price.toLocaleString()}원 (${changeArrow}${changeSign}${profitRate}%) · 손익 ${profit >= 0 ? "+" : ""}${Math.round(profit).toLocaleString()}원`,
     );
   });
 
@@ -936,6 +950,55 @@ function getStocksForAutocomplete() {
   }));
 }
 
+/** 종목별 최근 뉴스 (symbol을 주면 그 종목만). 종목마다 가장 최근 1건만 저장되어 있다 */
+function createStockNewsEmbed(symbol) {
+  const rows = stmtSelectStocksForEmbed
+    .all()
+    .filter((s) => (!symbol || s.symbol === symbol) && s.last_news_title)
+    .sort((a, b) => b.last_news_time - a.last_news_time);
+  const embed = new EmbedBuilder().setColor(0x00aa99).setTitle("📰 주식 뉴스").setTimestamp();
+  embed.setDescription(
+    rows.length
+      ? rows
+          .map((s) => `**${s.name}** (${s.symbol.toUpperCase()}) · <t:${s.last_news_time}:R>\n${s.last_news_title}`)
+          .join("\n\n")
+          .slice(0, 4000)
+      : "최근 뉴스가 없어요.",
+  );
+  return embed;
+}
+
+/** 종목 일봉 차트 (최근 종가 흐름 + 오늘 시·고·저) */
+function createChartEmbed(symbol) {
+  const s = stmtSelectStocksForEmbed.all().find((r) => r.symbol === symbol);
+  if (!s) return null;
+  const hist = (s.history ? s.history.split(",").filter(Boolean).map(Number) : []).slice(-14);
+  const series = [...hist, s.price];
+  const prev = s.last_price || s.price;
+  const rate = prev > 0 ? s.price / prev - 1 : 0;
+  const lo = Math.min(...series);
+  const hi = Math.max(...series);
+  const head =
+    series.length >= 2
+      ? `\`${sparkline(series)}\` (최근 ${series.length}거래일, 오른쪽이 현재)\n\n`
+      : "종가 기록이 아직 부족해요.\n\n";
+  return new EmbedBuilder()
+    .setColor(0x00aa99)
+    .setTitle(`📊 ${s.name} (${s.symbol.toUpperCase()}) 차트`)
+    .setDescription(`${head}**${s.price.toLocaleString()}원** ${fmtPct(rate)}`)
+    .addFields(
+      { name: "전일 종가", value: `${prev.toLocaleString()}원`, inline: true },
+      { name: "오늘 시가", value: `${(s.day_open || s.price).toLocaleString()}원`, inline: true },
+      {
+        name: "오늘 고가 / 저가",
+        value: `${(s.day_high || s.price).toLocaleString()} / ${(s.day_low || s.price).toLocaleString()}원`,
+        inline: true,
+      },
+      { name: "기간 최고 / 최저", value: `${hi.toLocaleString()} / ${lo.toLocaleString()}원`, inline: true },
+    )
+    .setTimestamp();
+}
+
 module.exports = {
   TICK_MINUTES,
   resetStocksOnce,
@@ -944,10 +1007,13 @@ module.exports = {
   isMarketOpen,
   getMarketStatus,
   updateStockPrices,
+  ensureOpenTick,
   buyStock,
   sellStock,
   STOCKS,
   createStockUpdateEmbed,
   createMyStocksEmbed,
+  createStockNewsEmbed,
+  createChartEmbed,
   getStocksForAutocomplete,
 };

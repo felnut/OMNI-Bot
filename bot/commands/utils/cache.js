@@ -50,7 +50,14 @@ async function getOrSet(key, ttlMs, loaderFn) {
   return value;
 }
 
+/** 돈이 바뀐 유저의 랭킹 캐시를 지운다 (내 순위 + TOP 10) */
+function invalidateMoney(...userIds) {
+  for (const id of userIds) store.delete(`leaderboard:money:myRank:${id}`);
+  store.delete("leaderboard:money:top10");
+}
+
 module.exports = {
+  invalidateMoney,
   get,
   set,
   del,

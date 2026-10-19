@@ -8,7 +8,7 @@ const { getUserOrFail } = require("../utils/user.js");
 const cache = require("../utils/cache");
 
 // 카드 한 장을 뽑아 숫자에 따라 배당 (53장: 조커 1 + 4무늬 × 13랭크, 각 장 확률 1/53)
-// 배당(베팅 대비 지급 배수): 합계 52.5 / 53 → 환수율 약 99.1%, 하우스 엣지 약 0.9% (조커 12.5 + A 3×4 + J·Q·K 2×12 + 10 1×4)
+// 배당(베팅 대비 지급 배수): 합계 50 / 53 → 환수율 약 94.3% (조커 10 + A 3×4 + J·Q·K 2×12 + 10 1×4)
 // 이익(>1배) 약 32%, 본전(1배) 7.5%, 전액 손실 약 60%
 const BET_AMOUNT = 50000; // 고정 베팅 금액
 const SUITS = ["♥", "♦", "♣", "♠"];
@@ -20,7 +20,7 @@ const PAYOUT_BY_RANK = {
   J: 2,
   10: 1,
 };
-const JOKER_PAYOUT = 12.5;
+const JOKER_PAYOUT = 10;
 
 const DECK = [
   ...SUITS.flatMap((suit) => RANKS.map((rank) => ({ label: `${rank}${suit}`, rank }))),
@@ -40,7 +40,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("카드뽑기")
     .setDescription(
-      "카드뽑기! 베팅 5만원, 카드 한 장으로 최대 12.5배!",
+      "카드뽑기! 베팅 5만원, 카드 한 장으로 최대 10배!",
     ),
 
   async execute(interaction) {
@@ -67,8 +67,7 @@ module.exports = {
     const net = prize - BET_AMOUNT;
 
     stmtUpdateUserMoneyDelta.run(net, interaction.user.id);
-    cache.del(`leaderboard:money:myRank:${interaction.user.id}`);
-    cache.del("leaderboard:money:top10");
+    cache.invalidateMoney(interaction.user.id);
 
     let title;
     let color;
@@ -104,7 +103,7 @@ module.exports = {
         },
       )
       .setFooter({
-        text: "조커 12.5배 · A 3배 · J/Q/K 2배 · 10 본전 · 나머지 꽝",
+        text: "조커 10배 · A 3배 · J/Q/K 2배 · 10 본전 · 나머지 꽝",
       })
       .setTimestamp();
 

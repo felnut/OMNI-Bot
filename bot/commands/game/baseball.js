@@ -12,10 +12,10 @@ const cache = require("../utils/cache");
 const BET_AMOUNT = 1000; // 베팅 금액
 const MAX_TRIES = 10;
 
-// 시도 횟수가 적을수록 보상이 큼. 보상 = 1280 - 60 × 시도 횟수 (1회 1,220원 ... 4회 1,040원 ... 10회 680원)
-// 거의 최적으로 푸는 풀이기(평균 약 4.9회) 기준 환수율 약 98.5%, 일반 플레이어는 그보다 조금 손해
+// 시도 횟수가 적을수록 보상이 큼. 보상 = 1240 - 60 × 시도 횟수 (1회 1,180원 ... 4회 1,000원 ... 10회 640원)
+// 거의 최적으로 푸는 풀이기(평균 약 4.9회) 기준 환수율 약 94.6%, 일반 플레이어는 그보다 조금 손해
 function rewardFor(tries) {
-  return 1280 - 60 * tries;
+  return 1240 - 60 * tries;
 }
 
 // 헬퍼 함수: 1~9 중복 없는 4자리 정답 생성
@@ -76,8 +76,7 @@ module.exports = {
         BET_AMOUNT,
         interaction.user.id,
       );
-      cache.del(`leaderboard:money:myRank:${interaction.user.id}`);
-      cache.del("leaderboard:money:top10");
+      cache.invalidateMoney(interaction.user.id);
 
       // 정답 생성하고 게임 상태 저장
       const answer = generateAnswer();

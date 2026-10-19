@@ -1,12 +1,12 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const { EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const {
-  updateStockPrices,
   buyStock,
   sellStock,
   STOCKS,
   createStockUpdateEmbed,
   createMyStocksEmbed,
+  createStockNewsEmbed,
+  createChartEmbed,
   getStocksForAutocomplete,
 } = require("../../managers/stockManager");
 const db = require("../../../Database");
@@ -65,8 +65,17 @@ module.exports = {
     )
     .addSubcommand((sub) =>
       sub
-        .setName("업데이트")
-        .setDescription("테스트용 주가 업데이트 (관리자만)"),
+        .setName("뉴스")
+        .setDescription("종목 뉴스 보기")
+        .addStringOption((opt) => opt.setName("종목").setDescription("비워 두면 전체").setAutocomplete(true)),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("차트")
+        .setDescription("종목 차트 보기")
+        .addStringOption((opt) =>
+          opt.setName("종목").setDescription("종목명 (입력 시 목록이 뜹니다)").setRequired(true).setAutocomplete(true),
+        ),
     ),
 
   async execute(interaction) {
@@ -89,8 +98,7 @@ module.exports = {
           ? buyStock(interaction.user.id, symbol, qty)
           : sellStock(interaction.user.id, symbol, qty);
 
-        cache.del(`leaderboard:money:myRank:${interaction.user.id}`);
-        cache.del("leaderboard:money:top10");
+        cache.invalidateMoney(interaction.user.id);
 
         const portfolioEmbed = createMyStocksEmbed(
           interaction.user.id,
@@ -166,22 +174,16 @@ module.exports = {
       return interaction.reply({ embeds: [embed] });
     }
 
-    // ====================== 주가 강제 업데이트 (관리자 전용) ======================
-    if (sub === "업데이트") {
-      if (!interaction.member.permissions.has("ADMINISTRATOR")) {
-        return interaction.reply("❌ 관리자만 쓸 수 있습니다.");
-      }
-      try {
-        await updateStockPrices({ force: true });
-        cache.del("leaderboard:stock_value:top10");
-        const updateEmbed = createStockUpdateEmbed();
-        return interaction.reply({
-          content: "✅ 주가 업데이트 완료!",
-          embeds: [updateEmbed],
-        });
-      } catch (e) {
-        return interaction.reply(`❌ 업데이트 중 오류: ${e.message}`);
-      }
+    // ====================== 뉴스 / 손익 / 차트 ======================
+    if (sub === "뉴스") {
+      const symbol = interaction.options.getString("종목");
+      if (symbol && !STOCKS[symbol]) return interaction.reply({ content: "❌ 존재하지 않는 종목입니다.", flags: MessageFlags.Ephemeral });
+      return interaction.reply({ embeds: [createStockNewsEmbed(symbol)] });
+    }
+    if (sub === "차트") {
+      const embed = createChartEmbed(interaction.options.getString("종목"));
+      if (!embed) return interaction.reply({ content: "❌ 존재하지 않는 종목입니다.", flags: MessageFlags.Ephemeral });
+      return interaction.reply({ embeds: [embed] });
     }
   },
 

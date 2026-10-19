@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const db = require("../../../Database.js");
+const { isServerAdmin } = require("../utils/perm");
 
 const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
 const EPHEMERAL = MessageFlags.Ephemeral;
@@ -18,13 +19,6 @@ function maskEmail(email) {
   return `${local.slice(0, 2)}${"*".repeat(Math.max(local.length - 2, 1))}@${domain}`;
 }
 
-/** 서버 소유자 또는 관리자(Administrator) 권한자인지 */
-function isServerAdmin(interaction) {
-  return (
-    interaction.guild?.ownerId === interaction.user.id ||
-    interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)
-  );
-}
 
 module.exports = {
   data: new SlashCommandBuilder()

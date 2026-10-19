@@ -54,8 +54,7 @@ module.exports = (client) => {
         .run(reward, message.author.id).changes;
       if (!changes) return; // safety
 
-      cache.del(`leaderboard:money:myRank:${message.author.id}`);
-      cache.del("leaderboard:money:top10");
+      cache.invalidateMoney(message.author.id);
 
       embed
         .setColor("#57f287")

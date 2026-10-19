@@ -9,6 +9,7 @@ const cache = require("../utils/cache");
 
 const RESCUE_THRESHOLD = 1000;
 const RESCUE_MAX = 700;
+const STREAK_MULT_MAX = 3; // 연속 보너스 배수 상한 (30일 이상 연속 시 기본 보상의 +90%)
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -60,7 +61,7 @@ module.exports = {
 
     // 보상 계산
     const baseReward = Math.floor(Math.random() * 201) + 150;
-    const multiplier = Math.floor(newStreak / 10);
+    const multiplier = Math.min(Math.floor(newStreak / 10), STREAK_MULT_MAX);
     const streakBonus = Math.round(baseReward * 0.3 * multiplier);
     // 파산 방지: 잔액이 RESCUE_THRESHOLD 미만이면 부족분을 보충 (최대 RESCUE_MAX)
     const rescue =
@@ -75,8 +76,7 @@ module.exports = {
       `UPDATE user SET money = ?, daily_last_reset = ?, streak = ? WHERE user_id = ?`,
     ).run(newMoney, todayResetTimeSec, newStreak, userId);
 
-    cache.del(`leaderboard:money:myRank:${userId}`);
-    cache.del("leaderboard:money:top10");
+    cache.invalidateMoney(userId);
 
     // 출석 완료 임베드
     const embed = new EmbedBuilder()

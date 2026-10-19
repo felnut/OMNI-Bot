@@ -28,8 +28,7 @@ module.exports = {
       ).run(interaction.user.id, 1000, 0, 0);
       user = { money: 1000 };
 
-      cache.del(`leaderboard:money:myRank:${interaction.user.id}`);
-      cache.del("leaderboard:money:top10");
+      cache.invalidateMoney(interaction.user.id);
     }
 
     // 지갑 임베드 출력

@@ -42,6 +42,7 @@ function parseUrl(text) {
 
 /** yt-dlp를 최신 버전으로 업데이트 (쿨다운 안에서는 하지 않음). 업데이트를 실행했으면 true */
 function updateYtdlp() {
+  if (process.env.YTDLP_AUTO_UPDATE === "0") return Promise.resolve(false); // 자동 업데이트 끔(수동 업데이트)
   if (updating) return updating;
   if (Date.now() - lastUpdateAt < UPDATE_COOLDOWN_MS) return Promise.resolve(false);
   lastUpdateAt = Date.now();

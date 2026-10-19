@@ -215,7 +215,13 @@ function startCacheServer() {
       res.writeHead(405).end();
       return;
     }
-    const name = decodeURIComponent((req.url || "").split("?")[0].slice(1));
+    let name;
+    try {
+      name = decodeURIComponent((req.url || "").split("?")[0].slice(1));
+    } catch {
+      res.writeHead(400).end();
+      return;
+    }
     if (!FILE_RE.test(name)) {
       res.writeHead(404).end();
       return;

@@ -14,6 +14,14 @@ const panels = new Map();
 
 const PANEL_COLOR = 0x5865f2;
 
+/** 외부(영상 제목 등)에서 온 글자를 안전하게: 마크다운·링크 문법을 무력화하고 길이를 제한한다 (피싱 링크·서식 위장 방지) */
+const safeText = (t, max = 100) => {
+  const s = String(t ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, max);
+  return s.replace(/([\\*_~`|>\[\]()#<])/g, "\\$1");
+};
+/** 임베드 링크·이미지는 http(s)만 허용 */
+const safeUrl = (u) => (typeof u === "string" && /^https?:\/\//i.test(u) && u.length <= 512 ? u : null);
+
 const fmt = (ms) => {
   const s = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(s / 3600);
@@ -33,8 +41,8 @@ function panelPayload(player) {
   const embed = new EmbedBuilder()
     .setColor(PANEL_COLOR)
     .setAuthor({ name: player.paused ? "⏸️ 일시정지됨" : "🎶 지금 재생 중" })
-    .setTitle(info.title)
-    .setDescription(`**${info.author || "알 수 없음"}**`)
+    .setTitle(String(info.title ?? "").slice(0, 256))
+    .setDescription(`**${safeText(info.author || "알 수 없음", 100)}**`)
     .addFields(
       { name: "길이", value: info.isStream ? "🔴 LIVE" : fmt(info.duration), inline: true },
       {
@@ -43,13 +51,13 @@ function panelPayload(player) {
         inline: true,
       },
     );
-  if (info.uri) embed.setURL(info.uri);
-  if (info.artworkUrl) embed.setThumbnail(info.artworkUrl);
+  if (safeUrl(info.uri)) embed.setURL(info.uri);
+  if (safeUrl(info.artworkUrl)) embed.setThumbnail(info.artworkUrl);
   if (upcoming.length) {
     embed.addFields({
       name: "다음 곡",
       value:
-        upcoming.map((t, i) => `${i + 1}. ${t.info.title}`).join("\n") +
+        upcoming.map((t, i) => `${i + 1}. ${safeText(t.info.title)}`).join("\n") +
         (more > 0 ? `\n… 외 ${more}곡` : ""),
     });
   }
@@ -118,13 +126,13 @@ async function handleMusicButton(interaction) {
       const cur = player.queue.current;
       const list = player.queue.tracks
         .slice(0, 15)
-        .map((t, i) => `${i + 1}. ${t.info.title} (${fmt(t.info.duration)})`);
+        .map((t, i) => `${i + 1}. ${safeText(t.info.title)} (${fmt(t.info.duration)})`);
       const more = player.queue.tracks.length - 15;
       const embed = new EmbedBuilder()
         .setColor(PANEL_COLOR)
         .setTitle("📃 대기열")
         .setDescription(
-          `**지금 재생 중**\n${cur.info.title}\n\n` +
+          `**지금 재생 중**\n${safeText(cur.info.title)}\n\n` +
             (list.length ? list.join("\n") : "대기열이 비어 있어요.") +
             (more > 0 ? `\n… 외 ${more}곡` : ""),
         );
@@ -135,6 +143,12 @@ async function handleMusicButton(interaction) {
 
 /** Lavalink 클라이언트 생성 (index.js에서 한 번 호출) */
 function createMusicManager(client) {
+  // 기본 비밀번호(CHANGE_ME)나 빈 값으로는 Lavalink에 연결하지 않는다 (같은 PC의 다른 프로그램이 접속하는 것을 막기 위함)
+  const pw = process.env.LAVALINK_PASSWORD;
+  if (!pw || pw === "CHANGE_ME") {
+    console.warn("🎵 LAVALINK_PASSWORD가 없거나 기본값(CHANGE_ME)이라 음악 기능을 끕니다. .env와 music/application.yml의 비밀번호를 바꿔 주세요.");
+    return null;
+  }
   manager = new LavalinkManager({
     nodes: [
       {
@@ -169,7 +183,7 @@ function createMusicManager(client) {
   manager.on("trackError", (player, track, payload) => {
     console.error("🎵 재생 오류:", track?.info?.title, payload?.exception?.message);
     const ch = client.channels.cache.get(player.textChannelId);
-    ch?.send(`⚠️ **${track?.info?.title ?? "곡"}** 을(를) 재생하지 못했어요. 다른 곡을 시도해 주세요.`).catch(() => {});
+    ch?.send(`⚠️ **${safeText(track?.info?.title ?? "곡")}** 을(를) 재생하지 못했어요. 다른 곡을 시도해 주세요.`).catch(() => {});
   });
 
   // 곡이 시작될 때마다 패널을 채팅창 맨 아래로 새로 보낸다
@@ -213,4 +227,4 @@ function getMusicManager() {
   return manager;
 }
 
-module.exports = { createMusicManager, getMusicManager, handleMusicButton, refreshPanel };
+module.exports = { safeText, createMusicManager, getMusicManager, handleMusicButton, refreshPanel };
