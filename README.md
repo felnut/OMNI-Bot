@@ -9,7 +9,7 @@
 
 옴니봇은 게임, 음악, 학교생활 정보와 서버 관리를 지원하는 다기능 Discord 봇입니다.
 
-[기능](#기능) · [시작하기](#시작하기) · [이용약관](docs/terms.md) · [개인정보 처리방침](docs/privacy.md) · [변경 기록](docs/changelog.md)
+[기능](#기능) · [시작하기](#시작하기) · [이용약관](https://felnut.github.io/OMNI-Bot/terms) · [개인정보 처리방침](https://felnut.github.io/OMNI-Bot/privacy) · [변경 기록](https://felnut.github.io/OMNI-Bot/changelog)
 
 ## 기능
 
