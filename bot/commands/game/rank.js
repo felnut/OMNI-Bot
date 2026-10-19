@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const db = require("../../../Database");
 const cache = require("../utils/cache");
+const { GUILD_RANK_ENABLED } = require("../../config");
 
 const SCOPE_GUILD = "guild";
 const SCOPE_GLOBAL = "global";
@@ -18,21 +19,26 @@ const stmtRicherGuild = db.prepare(
 );
 const stmtInGuild = db.prepare("SELECT 1 FROM user_guild WHERE guild_id = ? AND user_id = ?");
 
+// 서버별 이용 기록 저장이 꺼져 있으면(기본) '현재 서버' 순위를 쓸 수 없으므로 전체 순위만 보여준다
+const data = new SlashCommandBuilder()
+  .setName("랭킹")
+  .setDescription(GUILD_RANK_ENABLED ? "돈 많은 사람들 TOP 10 💰 (현재 서버 / 전체 서버)" : "돈 많은 사람들 TOP 10 💰 (전체 서버)");
+if (GUILD_RANK_ENABLED) {
+  data.addStringOption((o) =>
+    o
+      .setName("범위")
+      .setDescription("순위를 볼 범위 (기본: 현재 서버)")
+      .addChoices({ name: "현재 서버", value: SCOPE_GUILD }, { name: "전체 서버", value: SCOPE_GLOBAL }),
+  );
+}
+
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName("랭킹")
-    .setDescription("돈 많은 사람들 TOP 10 💰 (현재 서버 / 전체 서버)")
-    .addStringOption((o) =>
-      o
-        .setName("범위")
-        .setDescription("순위를 볼 범위 (기본: 현재 서버)")
-        .addChoices({ name: "현재 서버", value: SCOPE_GUILD }, { name: "전체 서버", value: SCOPE_GLOBAL }),
-    ),
+  data,
 
   async execute(interaction) {
     // 서버 밖(DM)에서는 현재 서버가 없으므로 전체 순위만 볼 수 있다
     const guildId = interaction.guildId;
-    const scope = guildId ? (interaction.options.getString("범위") ?? SCOPE_GUILD) : SCOPE_GLOBAL;
+    const scope = GUILD_RANK_ENABLED && guildId ? (interaction.options.getString("범위") ?? SCOPE_GUILD) : SCOPE_GLOBAL;
     const isGuild = scope === SCOPE_GUILD;
     const key = isGuild ? `leaderboard:money:guild:${guildId}` : "leaderboard:money:global";
 

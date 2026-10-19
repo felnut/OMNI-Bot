@@ -203,7 +203,13 @@ function createMusicManager(client) {
   });
 
   // 큐 종료·퇴장 시 패널의 버튼을 제거
-  manager.on("queueEnd", (player) => closePanel(player.guildId, "⏹️ 재생이 끝났어요"));
+  manager.on("queueEnd", (player) => {
+    closePanel(player.guildId, "⏹️ 재생이 끝났어요");
+    // 자동 추천이 켜져 있으면 다음에 들을 만한 곡을 올린다 (musicRecommend가 이 파일을 쓰므로 필요할 때 불러온다)
+    require("./musicRecommend")
+      .onQueueEnd(client, player)
+      .catch((e) => console.error("🎧 자동 추천 오류:", e?.message));
+  });
   manager.on("playerDestroy", (player, reason) =>
     closePanel(player.guildId, reason === "channelEmpty" ? "👋 아무도 없어서 나갔어요" : "⏹️ 재생을 멈췄어요"),
   );

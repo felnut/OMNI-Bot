@@ -218,6 +218,39 @@ function command() {
   return useWorker ? { file: VENV_PY, prefix: ["-m", "yt_dlp"] } : { file: EXE, prefix: [] };
 }
 
+const PLAYLIST_TIMEOUT_MS = 45_000;
+
+/**
+ * 재생목록(유튜브·유튜브 뮤직·사운드클라우드)의 곡 목록을 가져온다. 영상은 받지 않는다.
+ * [{id,title,uploader,url,duration}] — 비공개·삭제된 영상과 라이브는 제외
+ */
+function playlistEntries(url, limit = 100) {
+  const { file, prefix } = command();
+  return new Promise((resolve, reject) => {
+    execFile(
+      file,
+      [...prefix, "--flat-playlist", "--no-warnings", "--playlist-end", String(limit), "--print", "%(.{id,title,uploader,channel,url,webpage_url,duration,live_status})j", url],
+      { timeout: PLAYLIST_TIMEOUT_MS, windowsHide: true, maxBuffer: 8 * 1024 * 1024 },
+      (err, stdout, stderr) => {
+        if (err) return reject(new Error((stderr || err.message).toString().slice(0, 300)));
+        const out = [];
+        for (const line of stdout.split(/\r?\n/)) {
+          if (!line.trim()) continue;
+          try {
+            const e = JSON.parse(line);
+            if (!e.id || !e.title || /^\[(Private|Deleted) video\]$/i.test(e.title)) continue;
+            if (e.live_status === "is_live" || e.live_status === "is_upcoming") continue;
+            out.push({ id: e.id, title: e.title, uploader: e.channel || e.uploader || "", url: e.webpage_url || e.url || "", duration: e.duration });
+          } catch {
+            /* 빈 줄 등 무시 */
+          }
+        }
+        resolve(out);
+      },
+    );
+  });
+}
+
 /** yt-dlp를 최신 버전으로 업데이트. 성공하면 true */
 function update() {
   return new Promise((resolve) => {
@@ -245,4 +278,4 @@ function warmup() {
 
 process.on("exit", () => child?.kill());
 
-module.exports = { extract, search, command, update, warmup, useWorker };
+module.exports = { extract, search, playlistEntries, command, update, warmup, useWorker };

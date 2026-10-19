@@ -270,12 +270,33 @@ db.exec(`
 `);
 db.exec("CREATE INDEX IF NOT EXISTS idx_user_guild_user ON user_guild(user_id);");
 // 이전 버전에는 서버 구분이 없었으므로, 기존 이용자는 운영 서버(GUILD_ID)에서 이용한 것으로 한 번 등록한다
-if (process.env.GUILD_ID) {
+if (process.env.GUILD_ID && process.env.GUILD_RANK_ENABLED === "1") {
   db.prepare("INSERT OR IGNORE INTO user_guild (guild_id, user_id, last_seen) SELECT ?, user_id, ? FROM user").run(
     process.env.GUILD_ID,
     Date.now(),
   );
 }
+
+// 음악 추천 설정 (/음악추천) — 서버 단위 설정만 저장하고 사용자 정보는 저장하지 않는다
+// 자동 추천 켜짐 여부(기본 꺼짐)와, 서버 운영자가 추천 기준으로 등록한 사이트 주소
+db.exec(`
+  CREATE TABLE IF NOT EXISTS music_rec_config (
+    guild_id TEXT PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL
+  )
+`);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS music_rec_source (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    url TEXT NOT NULL,
+    label TEXT NOT NULL,
+    added_at INTEGER NOT NULL,
+    UNIQUE (guild_id, url)
+  )
+`);
 
 console.log("ℹ️ 마이그레이션 완료");
 

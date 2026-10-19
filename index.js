@@ -31,6 +31,7 @@ const {
 } = require("./bot/managers/stockManager");
 
 // DB 자동 연결 (초기화 및 마이그레이션 실행)
+const { GUILD_RANK_ENABLED } = require("./bot/config");
 const _db = require("./Database");
 const stmtTouchUser = _db.prepare("UPDATE user SET last_active = ? WHERE user_id = ?");
 // 이용한 서버 기록 (지갑이 있는 이용자만) — '현재 서버' 랭킹용
@@ -108,7 +109,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // 마지막 이용 시각 기록 (12개월 미이용 계정 삭제 기준)
     const now = Date.now();
     stmtTouchUser.run(now, interaction.user.id);
-    if (interaction.guildId) stmtTouchGuild.run(interaction.guildId, now, interaction.user.id);
+    if (GUILD_RANK_ENABLED && interaction.guildId) stmtTouchGuild.run(interaction.guildId, now, interaction.user.id);
   } catch (error) {
     console.error(error);
     const errorMsg = {
