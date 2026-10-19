@@ -1,4 +1,12 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  MessageFlags,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType,
+} = require("discord.js");
 const db = require("../../../Database.js");
 const { isServerAdmin } = require("../utils/perm");
 
@@ -29,7 +37,7 @@ module.exports = {
     .addSubcommand((sub) =>
       sub
         .setName("등록")
-        .setDescription("관리자 이메일 등록·변경 (운영 공지 수동 안내용, 등록 시 수집·이용에 동의로 봄)")
+        .setDescription("관리자 이메일 등록·변경 (운영 공지 수동 안내용, 안내 확인 후 동의 버튼으로 등록)")
         .addStringOption((opt) =>
           opt.setName("이메일").setDescription("공지를 받을 이메일 주소").setRequired(true).setMaxLength(254),
         ),
@@ -54,18 +62,43 @@ module.exports = {
       if (!EMAIL_RE.test(email) || email.length > 254) {
         return interaction.reply({ content: "❌ 이메일 형식이 올바르지 않아요.", flags: EPHEMERAL });
       }
-      const now = Date.now();
-      stmtUpsert.run(guildId, userId, email, now, now);
-      return interaction.reply({
+      // 저장 전에 수집·이용 내용을 알리고, 버튼으로 명확히 동의한 경우에만 저장한다
+      const reply = await interaction.reply({
         content:
-          `✅ 등록했어요: \`${maskEmail(email)}\`\n` +
-          "• 등록하면 아래 내용에 동의한 것으로 봅니다.\n" +
+          `📧 \`${maskEmail(email)}\` 을(를) 등록할까요? 아래 내용을 확인하고 동의하면 저장합니다.\n` +
           "• **목적**: 봇 운영 공지(점검·정책 변경·초기화 등) 안내\n" +
-          "• 제3자에게 제공하지 않습니다.\n" +
-          "• `/관리자 해제`로 즉시 삭제할 수 있고, 삭제 요청은 dev@felnut.com으로도 가능합니다.\n" +
+          "• **항목**: 이메일 주소, 서버 ID, 등록자 ID, 동의·수정 시각\n" +
+          "• **보유 기간**: 등록 해제(`/관리자 해제`) 또는 동의 철회 시까지\n" +
+          "• 제3자에게 제공하지 않으며, 동의하지 않아도 다른 기능은 그대로 쓸 수 있어요(공지 이메일만 받지 못해요).\n" +
           "• 자세한 내용: https://felnut.github.io/OMNI-Bot/privacy",
+        components: [
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("admin_contact:agree").setLabel("동의하고 등록").setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId("admin_contact:cancel").setLabel("취소").setStyle(ButtonStyle.Secondary),
+          ),
+        ],
         flags: EPHEMERAL,
+        fetchReply: true,
       });
+      try {
+        const click = await reply.awaitMessageComponent({
+          componentType: ComponentType.Button,
+          filter: (i) => i.user.id === userId,
+          time: 60_000,
+        });
+        if (click.customId !== "admin_contact:agree") {
+          return click.update({ content: "등록을 취소했어요. 저장된 정보는 없어요.", components: [] });
+        }
+        const now = Date.now();
+        stmtUpsert.run(guildId, userId, email, now, now);
+        return click.update({
+          content: `✅ 동의를 확인하고 등록했어요: \`${maskEmail(email)}\`\n\`/관리자 해제\`로 언제든 삭제할 수 있고, 삭제 요청은 dev@felnut.com으로도 가능해요.`,
+          components: [],
+        });
+      } catch {
+        // 시간 초과: 아무것도 저장하지 않는다
+        return interaction.editReply({ content: "시간이 지나 등록하지 않았어요. 저장된 정보는 없어요.", components: [] }).catch(() => {});
+      }
     }
 
     if (sub === "확인") {
