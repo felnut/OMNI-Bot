@@ -84,7 +84,7 @@ module.exports = {
 
     if (sub === "확인") {
       const list = getSchools(guildId);
-      if (!list.length) return interaction.reply({ content: "등록된 학교가 없어요. `/학교등록 검색`으로 등록해 주세요.", flags: EPHEMERAL });
+      if (!list.length) return interaction.reply({ content: "등록된 학교가 없어요. `/학교 등록 검색`으로 등록해 주세요.", flags: EPHEMERAL });
       const lines = list.map((s, i) => `${i + 1}. ${s.isDefault ? "⭐ " : ""}**${s.name}** (${s.kind})`);
       return interaction.reply({
         content: `🏫 등록된 학교 ${list.length}/${MAX_SCHOOLS}곳\n${lines.join("\n")}\n-# ⭐ 기본 학교 · 급식·시간표·학사일정에서 \`학교\` 칸으로 고를 수 있어요`,
@@ -117,7 +117,7 @@ module.exports = {
 
     // 검색 → 선택 → 추가 등록
     if (stmtCount.get(guildId).n >= MAX_SCHOOLS) {
-      return interaction.reply({ content: `❌ 학교는 서버당 최대 ${MAX_SCHOOLS}곳까지 등록할 수 있어요. 관리자가 \`/학교등록 해제\`로 정리해 주세요.`, flags: EPHEMERAL });
+      return interaction.reply({ content: `❌ 학교는 서버당 최대 ${MAX_SCHOOLS}곳까지 등록할 수 있어요. 관리자가 \`/학교 등록 해제\`로 정리해 주세요.`, flags: EPHEMERAL });
     }
     const query = interaction.options.getString("이름").trim();
     await interaction.reply({ content: "🔎 학교를 찾는 중…", flags: EPHEMERAL });

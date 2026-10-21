@@ -53,7 +53,7 @@ module.exports = {
     } catch (err) {
       const content =
         err.message === "NOT_REGISTERED"
-          ? "먼저 `/돈`으로 가입해주세요!"
+          ? "먼저 `/게임 가입`으로 가입해주세요!"
           : `💸 돈이 부족해요! (500원 필요)`;
       return interaction.reply({ content, flags: MessageFlags.Ephemeral });
     }

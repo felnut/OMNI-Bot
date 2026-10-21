@@ -50,7 +50,7 @@ module.exports = {
       } catch (err) {
         if (err.message === "NOT_REGISTERED") {
           return interaction.reply({
-            content: "등록되지 않았습니다. `/돈`으로 가입해주세요.",
+            content: "등록되지 않았습니다. `/게임 가입`으로 가입해주세요.",
             flags: MessageFlags.Ephemeral,
           });
         }
@@ -66,7 +66,7 @@ module.exports = {
       // 이미 게임 중인지 체크
       if (games.has(interaction.user.id)) {
         return interaction.reply({
-          content: "이미 게임 중입니다. `/숫자야구 포기`를 입력하세요.",
+          content: "이미 게임 중입니다. `/도박 숫자야구 포기`를 입력하세요.",
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -106,7 +106,7 @@ module.exports = {
                 `💰 **${BET_AMOUNT}원** 베팅 → 적게 시도할수록 보상이 커요 (1회 ${rewardFor(1)}원 → 5회 ${rewardFor(5)}원 → 최소 ${rewardFor(10)}원)\n` +
                 "기회는 총 **10번**\n\n" +
                 "채팅에 **4자리 숫자**만 입력하면 바로 결과 나와요!\n" +
-                "포기하고 싶으면 `/숫자야구 포기`를 입력하세요!",
+                "포기하고 싶으면 `/도박 숫자야구 포기`를 입력하세요!",
             )
             .setFooter({ text: "**0**이나 **중복 숫자**는 안 돼요!" }),
         ],
@@ -123,7 +123,7 @@ module.exports = {
             new EmbedBuilder()
               .setColor("#ff4444")
               .setTitle("❔ 진행 중인 게임이 없어요")
-              .setDescription("`/숫자야구 시작`으로 먼저 게임을 시작해주세요!"),
+              .setDescription("`/도박 숫자야구 시작`으로 먼저 게임을 시작해주세요!"),
           ],
           flags: MessageFlags.Ephemeral,
         });

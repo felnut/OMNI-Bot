@@ -70,7 +70,7 @@ async function requireSchool(interaction) {
   const schools = getSchools(interaction.guildId);
   if (!schools.length) {
     await interaction.reply({
-      content: "🏫 이 서버에 등록된 학교가 없어요. `/학교등록 검색`으로 먼저 학교를 등록해 주세요.",
+      content: "🏫 이 서버에 등록된 학교가 없어요. `/학교 등록 검색`으로 먼저 학교를 등록해 주세요.",
       flags: MessageFlags.Ephemeral,
     });
     return null;

@@ -72,27 +72,13 @@ function validateAndSanitizeEnv({ autoFix = true } = {}) {
 // ================== 로컬 명령어 파일 읽기 및 데이터 수집 ==================
 const commands = []; // 서버 명령어
 const dmCommands = []; // DM 전용 명령어
-const foldersPath = path.join(__dirname, "bot/commands");
-const commandFolders = fs.readdirSync(foldersPath);
 
-// bot/commands 하위의 모든 폴더를 순회하며 명령어 데이터 읽어오기
-for (const folder of commandFolders) {
-  const commandsPath = path.join(foldersPath, folder);
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter((file) => file.endsWith(".js"));
-
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    // data와 execute 속성이 모두 존재하는 파일만 정상적인 명령어로 취급
-    if ("data" in command && "execute" in command) {
-      const json = command.data.toJSON();
-      // DM 전용(봇과의 1:1 대화에서만 쓰는) 명령어는 서버가 아니라 전역으로 등록해야 DM에 나타난다
-      const dmOnly = Array.isArray(json.contexts) && json.contexts.length > 0 && json.contexts.every((c) => c === InteractionContextType.BotDM);
-      (dmOnly ? dmCommands : commands).push(json);
-    }
-  }
+// bot/commands 하위의 모든 명령어 파일에서 명령어 데이터 읽어오기 (묶음 명령어에 들어간 파일은 묶음으로만 나온다)
+for (const command of require("./bot/commandLoader").loadCommands()) {
+  const json = command.data.toJSON();
+  // DM 전용(봇과의 1:1 대화에서만 쓰는) 명령어는 서버가 아니라 전역으로 등록해야 DM에 나타난다
+  const dmOnly = Array.isArray(json.contexts) && json.contexts.length > 0 && json.contexts.every((c) => c === InteractionContextType.BotDM);
+  (dmOnly ? dmCommands : commands).push(json);
 }
 
 // 디스코드 API에 접근하기 위한 REST 클라이언트 초기화

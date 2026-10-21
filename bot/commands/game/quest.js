@@ -33,7 +33,7 @@ module.exports = {
   async execute(interaction) {
     const userId = interaction.user.id;
     if (!db.prepare("SELECT 1 FROM user WHERE user_id = ?").get(userId)) {
-      return interaction.reply({ content: "먼저 `/돈`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: "먼저 `/게임 가입`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
     }
     const first = buildEmbed(userId, interaction.user.username);
     await interaction.reply({ embeds: [first.embed], components: [button(!first.claimable)], flags: MessageFlags.Ephemeral });

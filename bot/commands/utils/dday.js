@@ -80,13 +80,13 @@ module.exports = {
       }
       const id = stmtInsert.run(guildId, name, date, interaction.user.id, Date.now()).lastInsertRowid;
       const d = daysUntil(date, today);
-      return interaction.reply(`✅ **${name}** (${date}) 등록! ${d === 0 ? "오늘이에요 🎉" : `D-${d}`}  · 삭제: \`/디데이 삭제 번호:${id}\``);
+      return interaction.reply(`✅ **${name}** (${date}) 등록! ${d === 0 ? "오늘이에요 🎉" : `D-${d}`}  · 삭제: \`/유틸 디데이 삭제 번호:${id}\``);
     }
 
     if (sub === "목록") {
       const rows = stmtList.all(guildId, today);
       if (!rows.length) {
-        return interaction.reply({ content: "등록된 D-day가 없어요. `/디데이 추가`로 만들어 보세요!", flags: EPHEMERAL });
+        return interaction.reply({ content: "등록된 D-day가 없어요. `/유틸 디데이 추가`로 만들어 보세요!", flags: EPHEMERAL });
       }
       const lines = rows.map((r) => {
         const d = daysUntil(r.date, today);

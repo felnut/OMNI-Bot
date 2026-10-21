@@ -61,7 +61,7 @@ module.exports = {
     } catch (err) {
       const content =
         err.message === "NOT_REGISTERED"
-          ? "먼저 `/돈`으로 가입해주세요!"
+          ? "먼저 `/게임 가입`으로 가입해주세요!"
           : `💸 돈이 부족해요! (필요: ${amount.toLocaleString()}원)`;
       return interaction.reply({ content, flags: MessageFlags.Ephemeral });
     }
@@ -70,7 +70,7 @@ module.exports = {
     const receiver = stmtSelectReceiver.get(target.id);
     if (!receiver) {
       return interaction.reply({
-        content: `${target} 님은 아직 가입 안 했어요.\n상대방이 먼저 \`/돈\` 쳐야 송금 가능해요!`,
+        content: `${target} 님은 아직 가입 안 했어요.\n상대방이 먼저 \`/게임 가입\` 쳐야 송금 가능해요!`,
         flags: 64,
       });
     }

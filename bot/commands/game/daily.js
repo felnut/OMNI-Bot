@@ -33,7 +33,7 @@ module.exports = {
     } catch (err) {
       if (err.message === "NOT_REGISTERED") {
         return interaction.reply({
-          content: "아직 가입 안 했어!\n먼저 `/돈` 쳐서 지갑 만들어~",
+          content: "아직 가입 안 했어!\n먼저 `/게임 가입` 쳐서 지갑 만들어~",
           flags: MessageFlags.Ephemeral,
         });
       }

@@ -24,7 +24,7 @@ function visibleCommands(interaction) {
 function usageLines(json) {
   const { description, usages } = usageOf(json);
   const lines = usages.map((u) => `\`${u.syntax}\` — ${u.description}`);
-  return usages.length > 1 || json.options?.some((o) => o.type === 1) ? [description, ...lines] : lines;
+  return usages.length > 1 || json.options?.some((o) => o.type === 1 || o.type === 2) ? [description, ...lines] : lines;
 }
 
 const clip = (text, max) => (text.length > max ? text.slice(0, max - 1) + "…" : text);
@@ -41,7 +41,7 @@ function overview(groups) {
     .setColor("#5865f2")
     .setTitle("📖 OMNI 도움말")
     .setDescription(
-      "분류별로 `/도움말 분류:음악`, 명령어별로 `/도움말 명령어:랭킹`처럼 쓰면 자세한 사용법을 볼 수 있어요.\n" +
+      "분류별로 `/유틸 도움말 분류:음악`, 명령어별로 `/유틸 도움말 명령어:도박`처럼 쓰면 자세한 사용법을 볼 수 있어요.\n" +
         "`<이름>`은 꼭 입력해야 하는 칸, `[이름]`은 선택 칸이에요.",
     )
     .addFields(groups.map((g) => ({ name: g.title, value: clip(g.commands.map((c) => `\`/${c.name}\``).join(" "), 1024) })))
@@ -84,7 +84,7 @@ module.exports = {
         .setDescription("분류별 명령어 보기")
         .addChoices(...CATEGORIES.filter((c) => !c.ownerOnly).map((c) => ({ name: c.title.replace(/^\S+\s/, ""), value: c.key }))),
     )
-    .addStringOption((o) => o.setName("명령어").setDescription("명령어 하나의 사용법 보기 (예: 랭킹)").setAutocomplete(true).setMaxLength(30)),
+    .addStringOption((o) => o.setName("명령어").setDescription("명령어 하나의 사용법 보기 (예: 도박)").setAutocomplete(true).setMaxLength(30)),
 
   // 명령어 이름 자동완성 (사용자에게 보이는 명령어만)
   async autocomplete(interaction) {

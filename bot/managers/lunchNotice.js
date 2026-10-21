@@ -2,7 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const db = require("../../Database");
 const { kstDate, neisRows, getSchools } = require("../commands/utils/neis");
 
-// 평일 급식 알림: 관리자가 /급식알림 설정으로 채널을 정하면 아침에 오늘 급식을 올린다 (이용자 정보 없음, 채널 ID만 저장)
+// 평일 급식 알림: 관리자가 /학교 급식알림설정 설정으로 채널을 정하면 아침에 오늘 급식을 올린다 (이용자 정보 없음, 채널 ID만 저장)
 const SEND_FROM_MIN = 7 * 60 + 30; // 07:30
 const SEND_UNTIL_MIN = 10 * 60; // 10:00 이후에 켜졌다면 그날은 건너뜀
 const CHECK_MS = 30 * 1000;

@@ -21,14 +21,9 @@ const { PermissionFlagsBits: P } = require("discord.js");
 const { CATEGORIES, groupByCategory, usageOf } = require(path.join(ROOT, "bot/commandInfo.js"));
 
 // ---------- 명령어 읽기 ----------
-const commands = [];
-const base = path.join(ROOT, "bot/commands");
-for (const folder of fs.readdirSync(base)) {
-  for (const file of fs.readdirSync(path.join(base, folder)).filter((f) => f.endsWith(".js"))) {
-    const mod = require(path.join(base, folder, file));
-    if (mod.data && mod.execute) commands.push({ name: mod.data.name, json: mod.data.toJSON() });
-  }
-}
+const commands = require(path.join(ROOT, "bot/commandLoader.js"))
+  .loadCommands()
+  .map((mod) => ({ name: mod.data.name, json: mod.data.toJSON() }));
 
 const ownerOnly = new Set(CATEGORIES.filter((c) => c.ownerOnly).flatMap((c) => c.names));
 const publicCommands = commands.filter((c) => !ownerOnly.has(c.name)); // 봇 운영자 전용 명령어는 사이트에 싣지 않는다

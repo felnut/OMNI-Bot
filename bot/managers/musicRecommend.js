@@ -154,7 +154,7 @@ async function buildChartMessages(guildId) {
 
 // ---------- 메시지와 버튼 ----------
 /**
- * /음악추천 받기: "1. 노래 제목 - 가수 - 어디" 목록(코드 블록)과 재생 버튼.
+ * /음악 추천받기: "1. 노래 제목 - 가수 - 어디" 목록(코드 블록)과 재생 버튼.
  * header가 있으면 목록 위에 한 줄 덧붙인다 (자동 추천용)
  */
 function buildMessage(tracks, header = null) {

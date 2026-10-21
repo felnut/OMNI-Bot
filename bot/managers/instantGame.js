@@ -52,7 +52,7 @@ async function play(interaction, bet, roll, render) {
   try {
     result = settle(interaction.user.id, bet, outcome.mult);
   } catch (err) {
-    const content = err.message === "NOT_REGISTERED" ? "먼저 `/돈`으로 가입해주세요!" : `💸 돈이 부족해요! (필요: ${bet.toLocaleString()}원)`;
+    const content = err.message === "NOT_REGISTERED" ? "먼저 `/게임 가입`으로 가입해주세요!" : `💸 돈이 부족해요! (필요: ${bet.toLocaleString()}원)`;
     return interaction.reply({ content, flags: MessageFlags.Ephemeral });
   }
   if (bet >= PROGRESS_MIN_BET) progress.record(interaction.user.id, "play");

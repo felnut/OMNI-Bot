@@ -42,7 +42,7 @@ module.exports = {
     } catch (err) {
       let content =
         err.message === "NOT_REGISTERED"
-          ? "먼저 `/돈`으로 가입해주세요!"
+          ? "먼저 `/게임 가입`으로 가입해주세요!"
           : `💸 돈이 부족해요! (필요: ${bet.toLocaleString()}원)`;
       return interaction.reply({ content, flags: MessageFlags.Ephemeral });
     }

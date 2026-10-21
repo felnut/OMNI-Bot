@@ -51,21 +51,9 @@ require("./bot/managers/ytdlp").warmup(); // yt-dlp 워커를 미리 띄워 첫 
 // ================== 커맨드 핸들러 초기화 ==================
 // 컬렉션을 생성해 봇이 메모리에 명령어를 기억
 client.commands = new Collection();
-const foldersPath = path.join(__dirname, "bot/commands");
-const commandFolders = fs.readdirSync(foldersPath);
-for (const folder of commandFolders) {
-  const commandsPath = path.join(foldersPath, folder);
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter((file) => file.endsWith(".js"));
-
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    if ("data" in command && "execute" in command) {
-      client.commands.set(command.data.name, command); // 컬렉션에 등록
-    }
-  }
+// 묶음 명령어(/도박, /유틸 등)에 들어간 파일은 묶음으로만 등록된다 (bot/commandLoader.js)
+for (const command of require("./bot/commandLoader").loadCommands()) {
+  client.commands.set(command.data.name, command); // 컬렉션에 등록
 }
 
 // ================== 유저와의 인터랙션(슬래시 명령어) 발생 시 처리 ==================

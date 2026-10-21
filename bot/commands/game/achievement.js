@@ -15,7 +15,7 @@ function buildEmbed(userId, username, footer) {
       .setColor(0x9b59b6)
       .setTitle(`🏆 ${username}님의 도전과제 (${claimedCount}/${list.length})`)
       .setDescription(lines.join("\n"))
-      .setFooter({ text: footer ?? "보상을 받으면 뱃지를 얻어요 · /뱃지로 프로필에 장착해요" }),
+      .setFooter({ text: footer ?? "보상을 받으면 배지를 얻어요 · /배지로 프로필에 장착해요" }),
     claimable: list.some((a) => a.done && !a.claimed),
   };
 }
@@ -24,12 +24,12 @@ const button = (disabled) =>
   new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("ach:claim").setLabel("보상 받기").setEmoji("🎁").setStyle(ButtonStyle.Success).setDisabled(disabled));
 
 module.exports = {
-  data: new SlashCommandBuilder().setName("도전과제").setDescription("도전과제 진행도를 보고 보상과 뱃지를 받아요"),
+  data: new SlashCommandBuilder().setName("도전과제").setDescription("도전과제 진행도를 보고 보상과 배지를 받아요"),
 
   async execute(interaction) {
     const userId = interaction.user.id;
     if (!db.prepare("SELECT 1 FROM user WHERE user_id = ?").get(userId)) {
-      return interaction.reply({ content: "먼저 `/돈`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: "먼저 `/게임 가입`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
     }
     const first = buildEmbed(userId, interaction.user.username);
     await interaction.reply({ embeds: [first.embed], components: [button(!first.claimable)], flags: MessageFlags.Ephemeral });

@@ -28,7 +28,7 @@ module.exports = {
     const bet = interaction.options.getInteger("금액");
 
     const user = db.prepare("SELECT money FROM user WHERE user_id = ?").get(userId);
-    if (!user) return interaction.reply({ content: "먼저 `/돈`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
+    if (!user) return interaction.reply({ content: "먼저 `/게임 가입`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
     if (bets.hasPending(userId)) {
       return interaction.reply({ content: "이미 진행 중인 게임이 있어요. 먼저 끝내 주세요!", flags: MessageFlags.Ephemeral });
     }

@@ -3,13 +3,13 @@
 
 // 분류는 명령어 이름으로 묶는다. 목록에 없는 새 명령어는 "기타"에 들어간다.
 const CATEGORIES = [
-  { key: "game", emoji: "🎮", label: "게임·경제", color: "#E8590C", blurb: "출석하고 돈을 모아 주식·미니게임으로 불려요", names: ["돈", "출석", "송금", "랭킹", "주식", "숫자야구", "블랙잭", "카드뽑기", "홀짝", "복권", "룰렛", "가위바위보", "동물경주", "슬롯", "낚시", "낚시도감", "무기", "퀘스트", "도전과제", "뱃지", "프로필"] },
-  { key: "music", emoji: "🎵", label: "음악", color: "#7048E8", blurb: "음성 채널에서 재생하고, 차트와 추천곡을 받아요", names: ["음악", "음악추천"] },
-  { key: "school", emoji: "🏫", label: "학교", color: "#1971C2", blurb: "급식·시간표·학사일정을 서버에서 바로 확인해요", names: ["학교등록", "급식", "시간표", "학사일정", "일정검색", "급식알림"] },
-  { key: "util", emoji: "🛠️", label: "편의", color: "#2F9E44", blurb: "디데이, 추첨, 서버·유저 정보와 도움말", names: ["디데이", "추첨", "계산", "주사위", "운세", "서버정보", "유저정보", "ping", "도움말"] },
+  { key: "game", emoji: "🎮", label: "게임·경제", color: "#E8590C", blurb: "출석하고 돈을 모아 도박·낚시·주식·무기 강화로 불려요", names: ["게임", "도박", "낚시", "복권", "주식", "무기"] },
+  { key: "music", emoji: "🎵", label: "음악", color: "#7048E8", blurb: "음성 채널에서 재생하고, 차트와 추천곡을 받아요", names: ["음악"] },
+  { key: "school", emoji: "🏫", label: "학교", color: "#1971C2", blurb: "급식·시간표·학사일정을 서버에서 바로 확인해요", names: ["학교"] },
+  { key: "util", emoji: "🛠️", label: "편의", color: "#2F9E44", blurb: "계산·주사위·운세·추첨·디데이, 서버·유저 정보와 도움말", names: ["유틸"] },
   { key: "dm", emoji: "💌", label: "DM 전용", color: "#D6336C", blurb: "봇과의 1:1 대화(DM)에서만 쓰는 알림·메모·오락 명령어", names: ["알림", "메모", "타로", "업다운", "초성퀴즈"] },
   { key: "admin", emoji: "🛡️", label: "서버 운영", color: "#C92A2A", blurb: "경고·차단·타임아웃과 서버 관리를 도와줘요", names: ["경고", "차단", "추방", "타임아웃", "서버관리", "로그채널설정", "관리자"] },
-  { key: "owner", emoji: "🔒", label: "봇 운영자 전용", color: "#868E96", blurb: "", names: ["돈설정", "시세갱신"], ownerOnly: true },
+  { key: "owner", emoji: "🔒", label: "봇 운영자 전용", color: "#868E96", blurb: "", names: ["운영"], ownerOnly: true },
 ];
 const OTHER = { key: "other", emoji: "📦", label: "기타", color: "#868E96", blurb: "", names: [] };
 
@@ -47,17 +47,24 @@ const plainOptions = (opts = []) => opts.filter((o) => o.type !== 1 && o.type !=
 
 /**
  * 한 명령어의 사용법: { description, usages: [{ sub, syntax, description, options }] }
- * 하위 명령이 있으면 하위 명령마다 한 줄, 없으면 명령어 자체가 한 줄
+ * 하위 명령(그룹 안의 하위 명령 포함)마다 한 줄, 없으면 명령어 자체가 한 줄
  */
 function usageOf(json) {
-  const subs = (json.options ?? []).filter((o) => o.type === 1);
-  if (!subs.length) {
+  const usages = [];
+  for (const o of json.options ?? []) {
+    if (o.type === 1) {
+      usages.push({ sub: o.name, syntax: `/${json.name} ${o.name}${optionsText(o.options)}`, description: o.description, options: plainOptions(o.options) });
+    } else if (o.type === 2) {
+      // /명령어 그룹 하위명령 (예: /유틸 디데이 추가)
+      for (const s of o.options ?? []) {
+        usages.push({ sub: `${o.name} ${s.name}`, syntax: `/${json.name} ${o.name} ${s.name}${optionsText(s.options)}`, description: s.description, options: plainOptions(s.options) });
+      }
+    }
+  }
+  if (!usages.length) {
     return { description: json.description, usages: [{ sub: null, syntax: `/${json.name}${optionsText(json.options)}`, description: json.description, options: plainOptions(json.options) }] };
   }
-  return {
-    description: json.description,
-    usages: subs.map((s) => ({ sub: s.name, syntax: `/${json.name} ${s.name}${optionsText(s.options)}`, description: s.description, options: plainOptions(s.options) })),
-  };
+  return { description: json.description, usages };
 }
 
 module.exports = { CATEGORIES, groupByCategory, optionsText, usageOf };
