@@ -11,6 +11,7 @@ const {
   getStocksForAutocomplete,
 } =require("../../managers/stockManager");
 const db = require("../../../Database");
+const { rankingEmbed } = require("../../managers/rankings");
 const cache = require("../utils/cache");
 
 const STOCK_PROGRESS_MIN = 10000; // 퀘스트로 세는 최소 거래 금액
@@ -67,7 +68,7 @@ module.exports = {
       sub.setName("수익").setDescription("매도로 확정한 누적 손익 확인"),
     )
     .addSubcommand((sub) =>
-      sub.setName("랭킹").setDescription("서버 자산가 순위"),
+      sub.setName("랭킹").setDescription("주식 보유액 순위 (전체 + 이 서버 TOP 5)"),
     )
     .addSubcommand((sub) =>
       sub
@@ -132,58 +133,7 @@ module.exports = {
     }
     // ====================== 랭킹 ======================
     if (sub === "랭킹") {
-      const users = await cache.getOrSet(
-        "leaderboard:stock_value:top10",
-        20000,
-        async () =>
-          db
-            .prepare(
-              `SELECT u.user_id, 
-          COALESCE(SUM(us.shares * s.price), 0) as stock_value 
-          FROM user u 
-          LEFT JOIN user_stocks us 
-          ON u.user_id = us.user_id 
-          LEFT JOIN stocks s 
-          ON us.symbol = s.symbol 
-          GROUP BY u.user_id 
-          HAVING stock_value > 0 
-          ORDER BY stock_value DESC 
-          LIMIT 10
-      `,
-            )
-            .all(),
-      );
-
-      const embed = {
-        color: 0xffd700, // 금색
-        title: "🏆 서버 주식 보유액 랭킹 TOP 10 🏆",
-        description: "실시간 보유 주식 평가액 순위",
-        fields: [],
-        footer: {
-          text: "• 0원 보유자는 제외",
-        },
-        timestamp: new Date(),
-      };
-
-      if (users.length === 0) {
-        embed.description = "아직 주식을 보유한 분이 없네요... 😅";
-        embed.color = 0x7289da; // 블루로 살짝 변경
-      } else {
-        let rankingText = "";
-        users.forEach((u, i) => {
-          const rankEmoji =
-            i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-          rankingText += `${rankEmoji} <@${u.user_id}> **${u.stock_value.toLocaleString()}원**\n`;
-        });
-
-        embed.fields.push({
-          name: "순위",
-          value: rankingText || "아직 데이터가 없어요",
-          inline: false,
-        });
-      }
-
-      return interaction.reply({ embeds: [embed] });
+      return interaction.reply({ embeds: [await rankingEmbed("stock", interaction.guildId)], allowedMentions: { parse: [] } });
     }
 
     // ====================== 뉴스 / 손익 / 차트 ======================

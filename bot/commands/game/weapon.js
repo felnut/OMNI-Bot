@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js"
 const db = require("../../../Database");
 const cache = require("../utils/cache");
 const progress = require("../../managers/progress");
+const { rankingEmbed } = require("../../managers/rankings");
 
 // 무기 강화: 돈을 쓰는 곳. 단계별 [강화비, 성공 확률, 실패 시 한 단계 하락 여부]와 판매가.
 // 판매가는 "강화 한 단계의 기대 환수율이 94%"가 되도록 역산한 값이다. 어느 단계에서 멈춰도 기대 손익은 마이너스다.
@@ -21,7 +22,7 @@ const stmtUser = db.prepare("SELECT money FROM user WHERE user_id = ?");
 const stmtWeapon = db.prepare("SELECT level, best_level FROM weapon WHERE user_id = ?");
 const stmtMoney = db.prepare("UPDATE user SET money = money + ? WHERE user_id = ?");
 
-const notRegistered = (i) => i.reply({ content: "먼저 `/돈`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
+const notRegistered = (i) => i.reply({ content: "먼저 `/게임 가입`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
 const noWeapon = (i) => i.reply({ content: "무기가 없어요. `/무기 생성`으로 먼저 만들어 보세요!", flags: MessageFlags.Ephemeral });
 const lackMoney = (i, need) => i.reply({ content: `💸 돈이 부족해요! (필요: ${won(need)})`, flags: MessageFlags.Ephemeral });
 
@@ -69,7 +70,7 @@ module.exports = {
     .addSubcommand((s) => s.setName("강화").setDescription("내 무기를 한 단계 강화해요 (실패하면 단계가 내려갈 수 있어요)"))
     .addSubcommand((s) => s.setName("정보").setDescription("내 무기와 다음 강화 정보를 확인해요"))
     .addSubcommand((s) => s.setName("판매").setDescription("내 무기를 팔아요"))
-    .addSubcommand((s) => s.setName("랭킹").setDescription("현재 무기 단계 순위 TOP 10")),
+    .addSubcommand((s) => s.setName("랭킹").setDescription("무기 단계 순위 (전체 + 이 서버 TOP 5)")),
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
@@ -142,12 +143,7 @@ module.exports = {
       return interaction.reply({ embeds: [embed] });
     }
 
-    // 랭킹
-    const rows = db.prepare("SELECT user_id, level, best_level FROM weapon ORDER BY level DESC, best_level DESC, updated_at ASC LIMIT 10").all();
-    const medals = ["🥇", "🥈", "🥉"];
-    const text = rows.length
-      ? rows.map((r, i) => `${medals[i] ?? `${i + 1}.`} <@${r.user_id}> **${label(r.level)}** (최고 +${r.best_level})`).join("\n")
-      : "아직 무기를 가진 분이 없어요. `/무기 생성`으로 첫 번째가 되어 보세요!";
-    return interaction.reply({ embeds: [new EmbedBuilder().setColor(0xffd700).setTitle("🏆 무기 랭킹 TOP 10").setDescription(text)], allowedMentions: { parse: [] } });
+    // 랭킹 (전체 TOP 5 + 이 서버 TOP 5)
+    return interaction.reply({ embeds: [await rankingEmbed("weapon", interaction.guildId)], allowedMentions: { parse: [] } });
   },
 };
