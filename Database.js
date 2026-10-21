@@ -352,6 +352,26 @@ for (const [name, key] of Object.entries(FISH_NAME_TO_KEY)) {
   db.prepare("UPDATE OR IGNORE fish_log SET fish = ? WHERE fish = ?").run(key, name);
 }
 
+// 낚시 최고 기록 (/낚시 시작 결과 화면, /낚시 도감) — 어종별 내 가장 큰 크기. 사용자 삭제 시 함께 삭제
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fish_best (
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    fish TEXT NOT NULL,
+    cm REAL NOT NULL,
+    PRIMARY KEY (user_id, fish)
+  )
+`);
+// 서버 신기록 — 서버·어종별 가장 큰 크기와 잡은 사람. 서버별 이용 기록(GUILD_RANK_ENABLED)을 켠 뒤에만 저장한다
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fish_record (
+    guild_id TEXT NOT NULL,
+    fish TEXT NOT NULL,
+    cm REAL NOT NULL,
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    PRIMARY KEY (guild_id, fish)
+  )
+`);
+
 // 무기 강화 (/무기) — 사용자당 무기 1개. 사용자 삭제 시 함께 삭제
 db.exec(`
   CREATE TABLE IF NOT EXISTS weapon (

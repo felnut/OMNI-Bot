@@ -69,7 +69,7 @@ const ACHIEVEMENTS = [
   { id: "play1000", icon: "🏆", name: "게임 중독자", desc: "미니게임 1,000판", kind: "stat", key: "play", target: 1000, reward: 3000 },
   { id: "fish30", icon: "🎣", name: "초보 낚시꾼", desc: "낚시 30번", kind: "stat", key: "fish", target: 30, reward: 500 },
   { id: "fish200", icon: "🐟", name: "낚시 달인", desc: "낚시 200번", kind: "stat", key: "fish", target: 200, reward: 2000 },
-  { id: "fishdex", icon: "📖", name: "도감 완성", desc: `낚시 도감 ${FISH.length}종 모두 수집`, kind: "fishdex", target: FISH.length, reward: 3000 },
+  { id: "fishdex", icon: "📖", name: "도감 완성", desc: `낚시 도감 ${FISH.length}종 모두 수집`, kind: "fishdex", target: FISH.length, reward: 8000 },
   { id: "lotto50", icon: "🎫", name: "복권 애호가", desc: "복권 50장", kind: "stat", key: "lotto", target: 50, reward: 500 },
   { id: "stock20", icon: "📊", name: "개미 투자자", desc: "주식 거래 20번", kind: "stat", key: "stock", target: 20, reward: 700 },
   { id: "stockprofit", icon: "📈", name: "수익 실현", desc: "주식 실현 수익 10,000원", kind: "stockprofit", target: 10000, reward: 1500 },

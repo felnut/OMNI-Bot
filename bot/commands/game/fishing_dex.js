@@ -12,10 +12,11 @@ module.exports = {
     }
     const counts = new Map(db.prepare("SELECT fish, count FROM fish_log WHERE user_id = ?").all(userId).map((r) => [r.fish, r.count]));
     const rod = db.prepare("SELECT rod FROM fishing_gear WHERE user_id = ?").get(userId)?.rod ?? 0;
+    const best = new Map(db.prepare("SELECT fish, cm FROM fish_best WHERE user_id = ?").all(userId).map((r) => [r.fish, r.cm]));
     const caught = FISH.filter((f) => counts.has(f.key)).length;
     const lines = FISH.map((f) => {
       const n = counts.get(f.key);
-      if (n) return `${f.name} · **${n.toLocaleString()}마리** (${f.mult}배)`;
+      if (n) return `${f.name} · **${n.toLocaleString()}마리** (${f.mult}배)${best.has(f.key) ? ` · 최대 ${best.get(f.key)}cm` : ""}`;
       return f.rod > rod ? `🔒 ${RODS[f.rod].name}가 있으면 만날 수 있어요` : "❔ 아직 못 잡았어요";
     });
     const total = [...counts.values()].reduce((a, b) => a + b, 0);
