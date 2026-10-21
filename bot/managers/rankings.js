@@ -5,6 +5,7 @@ const { EmbedBuilder } = require("discord.js");
 const db = require("../../Database");
 const cache = require("../commands/utils/cache");
 const { GUILD_RANK_ENABLED } = require("../config");
+const { levelBar } = require("./weaponData");
 
 const TOP = 5;
 const MEDALS = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
@@ -19,8 +20,9 @@ const BOARDS = {
   },
   weapon: {
     title: "⚔️ 무기 랭킹",
-    select: "SELECT u.user_id, w.level AS v1, w.best_level AS v2 FROM weapon w JOIN user u ON u.user_id = w.user_id {JOIN} {WHERE} ORDER BY w.level DESC, w.best_level DESC, w.updated_at ASC",
-    line: (r) => `**+${r.v1}** (최고 +${r.v2})`,
+    select:
+      "SELECT u.user_id, MAX(w.level) AS v1, w.best_level AS v2, w.name AS v3 FROM weapons w JOIN user u ON u.user_id = w.user_id {JOIN} {WHERE} GROUP BY u.user_id ORDER BY v1 DESC, v2 DESC",
+    line: (r) => `**${r.v3} +${r.v1}** (최고 +${r.v2})\n${levelBar(r.v1)}`,
   },
   stock: {
     title: "📈 주식 보유액 랭킹",

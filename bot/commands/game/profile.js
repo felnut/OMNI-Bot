@@ -5,7 +5,7 @@ const { FISH } = require("../../managers/fishData");
 
 const stmtUser = db.prepare("SELECT money, streak FROM user WHERE user_id = ?");
 const stmtRank = db.prepare("SELECT COUNT(*) + 1 AS rank FROM user WHERE money > ?");
-const stmtWeapon = db.prepare("SELECT level FROM weapon WHERE user_id = ?");
+const stmtWeapon = db.prepare("SELECT COUNT(*) AS n, MAX(level) AS top FROM weapons WHERE user_id = ?");
 const stmtFishKinds = db.prepare("SELECT COUNT(*) AS n FROM fish_log WHERE user_id = ? AND count > 0");
 const stmtRealized = db.prepare("SELECT profit FROM stock_realized WHERE user_id = ?");
 const stmtStock = db.prepare("SELECT COALESCE(SUM(us.shares * s.price), 0) AS v FROM user_stocks us JOIN stocks s ON s.symbol = us.symbol WHERE us.user_id = ?");
@@ -40,7 +40,7 @@ module.exports = {
         { name: "🏅 전체 순위", value: `${stmtRank.get(user.money).rank.toLocaleString()}위`, inline: true },
         { name: "🔥 연속 출석", value: `${user.streak || 0}일`, inline: true },
         { name: "📈 주식", value: `평가액 ${stockValue.toLocaleString()}원\n실현 수익 ${profit >= 0 ? "+" : ""}${profit.toLocaleString()}원`, inline: true },
-        { name: "⚔️ 무기", value: weapon ? `+${weapon.level}` : "없음", inline: true },
+        { name: "⚔️ 무기", value: weapon.n ? `${weapon.n}개 (최고 +${weapon.top})` : "없음", inline: true },
         { name: "📖 낚시 도감", value: `${stmtFishKinds.get(target.id).n}/${FISH.length}종`, inline: true },
         { name: "🎮 미니게임", value: `${(stats.get("play") ?? 0).toLocaleString()}판`, inline: true },
         { name: "🏆 도전과제", value: `${ach.filter((a) => a.claimed).length}/${ach.length}`, inline: true },

@@ -372,16 +372,29 @@ db.exec(`
   )
 `);
 
-// 무기 강화 (/무기) — 사용자당 무기 1개. 사용자 삭제 시 함께 삭제
+// 무기 강화 (/무기) — 한 사람이 최대 5개까지, 이름은 사람마다 겹치지 않게(대소문자 무시). 사용자 삭제 시 함께 삭제
 db.exec(`
-  CREATE TABLE IF NOT EXISTS weapon (
-    user_id TEXT PRIMARY KEY REFERENCES user(user_id) ON DELETE CASCADE,
+  CREATE TABLE IF NOT EXISTS weapons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    name TEXT NOT NULL COLLATE NOCASE,
     level INTEGER NOT NULL DEFAULT 0,
     best_level INTEGER NOT NULL DEFAULT 0,
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL,
+    UNIQUE (user_id, name)
   )
 `);
-db.exec("CREATE INDEX IF NOT EXISTS idx_weapon_best ON weapon(best_level DESC);");
+db.exec("CREATE INDEX IF NOT EXISTS idx_weapons_level ON weapons(level DESC, best_level DESC);");
+ensureColumn("weapons", "exp INTEGER NOT NULL DEFAULT 0"); // 지금 단계에서 쌓은 경험치 (그 단계의 필요량을 넘으면 다음 단계)
+// 이전 버전(사용자당 무기 1개, 이름이 없을 수 있음)의 weapon 테이블이 있으면 한 번 옮기고 지운다
+if (tableExists("weapon")) {
+  db.transaction(() => {
+    db.exec(`INSERT OR IGNORE INTO weapons (user_id, name, level, best_level, updated_at)
+             SELECT user_id, COALESCE(name, '무명 무기'), level, best_level, updated_at FROM weapon`);
+    db.exec("DROP TABLE weapon");
+  })();
+  console.log("✅ 무기 테이블을 여러 개 보유 구조(weapons)로 옮겼어요");
+}
 
 // 주식 실현 수익 (/주식 수익) — 매도로 확정된 손익의 누적 합계
 db.exec(`
