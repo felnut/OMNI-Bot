@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const db = require("../../../Database");
 const { FISH } = require("./fishing");
+const { PROGRESS_MIN_BET } = require("../../managers/instantGame");
 
 module.exports = {
   data: new SlashCommandBuilder().setName("낚시도감").setDescription("지금까지 잡은 물고기를 도감으로 확인해요"),
@@ -21,7 +22,8 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor(caught === FISH.length ? 0xffd700 : 0x3498db)
       .setTitle(`📖 ${interaction.user.username}님의 낚시 도감 (${caught}/${FISH.length})`)
-      .setDescription(`${lines.join("\n")}\n\n총 **${total.toLocaleString()}마리**를 낚았어요${caught === FISH.length ? "\n🎉 도감을 모두 채웠어요!" : ""}`);
+      .setDescription(`${lines.join("\n")}\n\n총 **${total.toLocaleString()}마리**를 낚았어요${caught === FISH.length ? "\n🎉 도감을 모두 채웠어요!" : ""}`)
+      .setFooter({ text: `미끼 ${PROGRESS_MIN_BET}원 이상으로 잡은 물고기만 도감에 기록돼요` });
     return interaction.reply({ embeds: [embed] });
   },
 };

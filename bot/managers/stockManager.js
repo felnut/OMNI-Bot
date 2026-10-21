@@ -710,13 +710,15 @@ function buyStock(userId, symbol, quantity) {
     } else {
       stmtInsertUserStock.run(userId, symbol, quantity, stock.price);
     }
+    return totalCost;
   });
 
-  tx();
+  const value = tx();
 
   // holdings & derived leaderboards changed
   cache.del(`portfolio:${userId}`);
   cache.del("leaderboard:stock_value:top10");
+  return value; // 거래 금액 (퀘스트 기록의 최소 금액 판단에 쓴다)
 }
 
 function sellStock(userId, symbol, quantity) {
@@ -743,12 +745,14 @@ function sellStock(userId, symbol, quantity) {
     if (holding.shares - quantity <= 0) {
       stmtDeleteHolding.run(userId, symbol);
     }
+    return totalGain;
   });
 
-  tx();
+  const value = tx();
 
   cache.del(`portfolio:${userId}`);
   cache.del("leaderboard:stock_value:top10");
+  return value;
 }
 
 // ────────────────────────────────────────────────

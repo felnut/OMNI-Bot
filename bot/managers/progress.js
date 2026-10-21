@@ -94,11 +94,23 @@ const stmtQuestAdd = db.prepare(
    ON CONFLICT(user_id, period_key, quest_id) DO UPDATE SET progress = progress + excluded.progress`,
 );
 
+// 비용 없이 반복할 수 있는 행동(수수료 없는 주식 사고팔기, 내 다른 계정에 송금)은 하루에 세는 횟수를 제한한다.
+// 횟수는 오늘 날짜 퀘스트 기록(quest_id = cap_이벤트)에 함께 쌓이고, 오래된 퀘스트 정리 때 같이 지워진다.
+const DAILY_CAPS = { stock: 4, transfer: 3 };
+const stmtCapGet = db.prepare("SELECT progress FROM quest_progress WHERE user_id = ? AND period_key = ? AND quest_id = ?");
+
 /** 성공한 행동을 기록한다. 가입하지 않았으면 무시. 기록 때문에 본래 명령어가 실패하면 안 되므로 오류는 삼킨다 */
 function record(userId, event, n = 1) {
   try {
     if (!stmtExists.get(userId)) return;
     db.transaction(() => {
+      const cap = DAILY_CAPS[event];
+      if (cap) {
+        const capId = `cap_${event}`;
+        const day = periodKeys().daily;
+        if ((stmtCapGet.get(userId, day, capId)?.progress ?? 0) >= cap) return;
+        stmtQuestAdd.run(userId, day, capId, 1);
+      }
       stmtStatAdd.run(userId, event, n);
       for (const q of currentQuests()) if (q.event === event) stmtQuestAdd.run(userId, q.period, q.id, n);
     })();

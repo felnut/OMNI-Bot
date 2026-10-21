@@ -32,8 +32,11 @@ module.exports = {
       bet,
       () => pickWeighted(FISH),
       (fish, { net }) => {
-        stmtLog.run(interaction.user.id, fish.name); // 정산이 끝난 판만 도감에 기록된다 (render는 정산 후에 호출됨)
-        if (bet >= PROGRESS_MIN_BET) progress.record(interaction.user.id, "fish");
+        // 정산이 끝난 판만 기록된다 (render는 정산 후에 호출됨). 도감도 도전과제 보상이 걸려 있어 퀘스트와 같은 최소 미끼 기준을 쓴다
+        if (bet >= PROGRESS_MIN_BET) {
+          stmtLog.run(interaction.user.id, fish.name);
+          progress.record(interaction.user.id, "fish");
+        }
         return {
         title: net > 0 ? "🎣 월척이에요!" : "🎣 낚시 결과",
         description: `낚싯줄을 당겼더니... **${fish.name}**!\n판매가 **${Math.floor(bet * fish.mult).toLocaleString()}원** (${fish.mult}배)`,

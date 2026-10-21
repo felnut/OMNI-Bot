@@ -13,6 +13,8 @@ const {
 const db = require("../../../Database");
 const cache = require("../utils/cache");
 
+const STOCK_PROGRESS_MIN = 10000; // 퀘스트로 세는 최소 거래 금액
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("주식")
@@ -98,12 +100,14 @@ module.exports = {
       const qty = interaction.options.getInteger("수량");
 
       try {
-        sub === "매수"
-          ? buyStock(interaction.user.id, symbol, qty)
-          : sellStock(interaction.user.id, symbol, qty);
+        const value =
+          sub === "매수"
+            ? buyStock(interaction.user.id, symbol, qty)
+            : sellStock(interaction.user.id, symbol, qty);
 
         cache.invalidateMoney(interaction.user.id);
-        require("../../managers/progress").record(interaction.user.id, "stock");
+        // 수수료가 없어 사고팔기가 공짜이므로, 일정 금액 이상의 거래만 퀘스트로 세고 하루 횟수도 제한한다 (progress.js)
+        if (value >= STOCK_PROGRESS_MIN) require("../../managers/progress").record(interaction.user.id, "stock");
 
         const portfolioEmbed = createMyStocksEmbed(
           interaction.user.id,

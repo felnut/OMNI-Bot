@@ -100,7 +100,8 @@ module.exports = {
     tx();
 
     cache.invalidateMoney(sender.user_id, target.id);
-    require("../../managers/progress").record(sender.user_id, "transfer");
+    // 다른 계정에 보내면 비용이 들지 않으므로 100원 이상만 세고 하루 횟수도 제한한다 (progress.js)
+    if (amount >= 100) require("../../managers/progress").record(sender.user_id, "transfer");
 
     const embed = new EmbedBuilder()
       .setColor("#3498db")
