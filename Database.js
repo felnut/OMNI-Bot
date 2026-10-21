@@ -329,6 +329,29 @@ db.exec(`
   )
 `);
 
+// 낚시 도구 (/낚시 미끼구매, /낚시 낚싯대구매) — 가진 낚싯대 단계와 미끼 개수. 사용자 삭제 시 함께 삭제
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fishing_gear (
+    user_id TEXT PRIMARY KEY REFERENCES user(user_id) ON DELETE CASCADE,
+    rod INTEGER NOT NULL DEFAULT 0
+  )
+`);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fishing_bait (
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    qty INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, kind)
+  )
+`);
+// 낚시 도감은 어종 이름(이모지 포함) 대신 어종 키로 저장한다 — 기존 기록(이름)은 아래에서 한 번 옮긴다
+const FISH_NAME_TO_KEY = {
+  "👢 낡은 장화": "boot", "🐟 붕어": "crucian", "🐠 잉어": "carp", "🐡 농어": "bass", "🍣 연어": "salmon", "🦈 참치": "tuna", "👑 황금물고기": "gold",
+};
+for (const [name, key] of Object.entries(FISH_NAME_TO_KEY)) {
+  db.prepare("UPDATE OR IGNORE fish_log SET fish = ? WHERE fish = ?").run(key, name);
+}
+
 // 무기 강화 (/무기) — 사용자당 무기 1개. 사용자 삭제 시 함께 삭제
 db.exec(`
   CREATE TABLE IF NOT EXISTS weapon (

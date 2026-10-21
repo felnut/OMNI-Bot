@@ -1,47 +1,63 @@
-const { SlashCommandBuilder } = require("discord.js");
-const { MIN_BET, PROGRESS_MIN_BET, pickWeighted, play } = require("../../managers/instantGame");
-const progress = require("../../managers/progress");
-
-// 잡힌 물고기의 값어치(배율). 기대값 약 94.3%
-const FISH = [
-  { name: "👢 낡은 장화", weight: 250_000, mult: 0 },
-  { name: "🐟 붕어", weight: 300_000, mult: 0.4 },
-  { name: "🐠 잉어", weight: 220_000, mult: 0.9 },
-  { name: "🐡 농어", weight: 140_000, mult: 1.5 },
-  { name: "🍣 연어", weight: 65_000, mult: 3 },
-  { name: "🦈 참치", weight: 20_000, mult: 6 },
-  { name: "👑 황금물고기", weight: 5_000, mult: 20 },
-];
-
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const db = require("../../../Database");
+const cache = require("../utils/cache");
+const progress = require("../../managers/progress");
+const { pickWeighted } = require("../../managers/instantGame");
+const { tableFor, RODS, BAITS, BAIT_BY_KEY } = require("../../managers/fishData");
+
+const stmtUser = db.prepare("SELECT money FROM user WHERE user_id = ?");
+const stmtRod = db.prepare("SELECT rod FROM fishing_gear WHERE user_id = ?");
+const stmtBait = db.prepare("SELECT qty FROM fishing_bait WHERE user_id = ? AND kind = ?");
+const stmtUseBait = db.prepare("UPDATE fishing_bait SET qty = qty - 1 WHERE user_id = ? AND kind = ? AND qty > 0");
+const stmtMoney = db.prepare("UPDATE user SET money = money + ? WHERE user_id = ?");
 const stmtLog = db.prepare(
   "INSERT INTO fish_log (user_id, fish, count) VALUES (?, ?, 1) ON CONFLICT(user_id, fish) DO UPDATE SET count = count + 1",
 );
 
+/** 미끼 1개를 쓰고 던진다. 결과(물고기)를 정하고 판매가를 바로 지급 */
+const cast = db.transaction((userId, baitKey) => {
+  if (!stmtUser.get(userId)) return { error: "NOT_REGISTERED" };
+  const bait = BAIT_BY_KEY.get(baitKey);
+  if (!stmtUseBait.run(userId, baitKey).changes) return { error: "NO_BAIT", bait };
+  const rod = stmtRod.get(userId)?.rod ?? 0;
+  const fish = pickWeighted(tableFor(rod));
+  const price = Math.floor(bait.price * fish.mult);
+  stmtMoney.run(price, userId);
+  stmtLog.run(userId, fish.key);
+  return { fish, bait, price, rod, left: stmtBait.get(userId, baitKey)?.qty ?? 0, balance: stmtUser.get(userId).money };
+});
+
 module.exports = {
-  FISH,
   data: new SlashCommandBuilder()
     .setName("낚시")
-    .setDescription("미끼 값을 내고 낚시해요! 잡은 물고기는 바로 팔려요 (황금물고기는 20배)")
-    .addIntegerOption((o) => o.setName("미끼").setDescription("미끼에 쓸 금액").setRequired(true).setMinValue(MIN_BET)),
+    .setDescription("미끼를 써서 낚시해요! 잡은 물고기는 바로 팔려요")
+    .addStringOption((o) =>
+      o
+        .setName("미끼")
+        .setDescription("쓸 미끼 (기본: 일반 미끼)")
+        .addChoices(...BAITS.map((b) => ({ name: `${b.name} (${b.price.toLocaleString()}원짜리)`, value: b.key }))),
+    ),
 
   async execute(interaction) {
-    const bet = interaction.options.getInteger("미끼");
-    return play(
-      interaction,
-      bet,
-      () => pickWeighted(FISH),
-      (fish, { net }) => {
-        // 정산이 끝난 판만 기록된다 (render는 정산 후에 호출됨). 도감도 도전과제 보상이 걸려 있어 퀘스트와 같은 최소 미끼 기준을 쓴다
-        if (bet >= PROGRESS_MIN_BET) {
-          stmtLog.run(interaction.user.id, fish.name);
-          progress.record(interaction.user.id, "fish");
-        }
-        return {
-        title: net > 0 ? "🎣 월척이에요!" : "🎣 낚시 결과",
-        description: `낚싯줄을 당겼더니... **${fish.name}**!\n판매가 **${Math.floor(bet * fish.mult).toLocaleString()}원** (${fish.mult}배)`,
-        };
-      },
-    );
+    const userId = interaction.user.id;
+    const r = cast(userId, interaction.options.getString("미끼") ?? "basic");
+    if (r.error === "NOT_REGISTERED") return interaction.reply({ content: "먼저 `/게임 가입`으로 가입해주세요!", flags: MessageFlags.Ephemeral });
+    if (r.error) {
+      return interaction.reply({ content: `🪱 ${r.bait.name}가 없어요. \`/낚시 미끼구매\`로 먼저 사 주세요!`, flags: MessageFlags.Ephemeral });
+    }
+    cache.invalidateMoney(userId);
+    progress.record(userId, "fish");
+
+    const net = r.price - r.bait.price;
+    const embed = new EmbedBuilder()
+      .setColor(net > 0 ? 0x57f287 : net < 0 ? 0xed4245 : 0xfee75c)
+      .setTitle(net > 0 ? "🎣 월척이에요!" : "🎣 낚시 결과")
+      .setDescription(
+        `낚싯줄을 당겼더니... **${r.fish.name}**!\n판매가 **${r.price.toLocaleString()}원** (${r.fish.mult}배)\n\n` +
+          `💵 수익 **${net > 0 ? "+" : ""}${net.toLocaleString()}원** (미끼값 ${r.bait.price.toLocaleString()}원)\n` +
+          `🪱 남은 ${r.bait.name} **${r.left.toLocaleString()}개** · 🎣 ${RODS[r.rod].name}\n💰 현재 잔액 **${r.balance.toLocaleString()}원**`,
+      )
+      .setTimestamp();
+    return interaction.reply({ embeds: [embed] });
   },
 };

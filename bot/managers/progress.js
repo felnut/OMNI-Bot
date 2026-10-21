@@ -1,9 +1,10 @@
-// 퀘스트·도전과제·뱃지의 기록과 보상 처리.
+// 퀘스트·도전과제·배지의 기록과 보상 처리.
 // 게임·출석 같은 명령어가 성공하면 record(userId, 이벤트)를 불러 진행도를 쌓고,
-// 화면(/퀘스트, /도전과제, /뱃지, /프로필)은 여기서 계산한 값을 보여 준다.
+// 화면(/퀘스트, /도전과제, /배지, /프로필)은 여기서 계산한 값을 보여 준다.
 const crypto = require("node:crypto");
 const db = require("../../Database");
 const cache = require("../commands/utils/cache");
+const { FISH } = require("./fishData");
 
 // ================== 퀘스트 ==================
 // event: record()로 올라오는 이벤트 이름. 보상은 출석(약 250원)에 견주어 작게 잡았다.
@@ -68,7 +69,7 @@ const ACHIEVEMENTS = [
   { id: "play1000", icon: "🏆", name: "게임 중독자", desc: "미니게임 1,000판", kind: "stat", key: "play", target: 1000, reward: 3000 },
   { id: "fish30", icon: "🎣", name: "초보 낚시꾼", desc: "낚시 30번", kind: "stat", key: "fish", target: 30, reward: 500 },
   { id: "fish200", icon: "🐟", name: "낚시 달인", desc: "낚시 200번", kind: "stat", key: "fish", target: 200, reward: 2000 },
-  { id: "fishdex", icon: "📖", name: "도감 완성", desc: "낚시 도감 7종 모두 수집", kind: "fishdex", target: 7, reward: 1500 },
+  { id: "fishdex", icon: "📖", name: "도감 완성", desc: `낚시 도감 ${FISH.length}종 모두 수집`, kind: "fishdex", target: FISH.length, reward: 3000 },
   { id: "lotto50", icon: "🎫", name: "복권 애호가", desc: "복권 50장", kind: "stat", key: "lotto", target: 50, reward: 500 },
   { id: "stock20", icon: "📊", name: "개미 투자자", desc: "주식 거래 20번", kind: "stat", key: "stock", target: 20, reward: 700 },
   { id: "stockprofit", icon: "📈", name: "수익 실현", desc: "주식 실현 수익 10,000원", kind: "stockprofit", target: 10000, reward: 1500 },
@@ -210,8 +211,8 @@ const claimAchievements = db.transaction((userId) => {
   return { items, total };
 });
 
-// ================== 뱃지 ==================
-/** 보상을 받은 도전과제의 뱃지 목록 */
+// ================== 배지 ==================
+/** 보상을 받은 도전과제의 배지 목록 */
 function badgesOf(userId) {
   const ids = new Set(stmtClaimedAch.all(userId).map((r) => r.id));
   return ACHIEVEMENTS.filter((a) => ids.has(a.id));
@@ -220,14 +221,14 @@ function badgesOf(userId) {
 const stmtEquipped = db.prepare("SELECT badge FROM user WHERE user_id = ?");
 const stmtEquip = db.prepare("UPDATE user SET badge = ? WHERE user_id = ?");
 
-/** 장착 중인 뱃지(도전과제 정의) 또는 null. 가진 적 없는 뱃지가 남아 있으면 무시 */
+/** 장착 중인 배지(도전과제 정의) 또는 null. 가진 적 없는 배지가 남아 있으면 무시 */
 function equippedBadge(userId) {
   const id = stmtEquipped.get(userId)?.badge;
   if (!id) return null;
   return badgesOf(userId).find((a) => a.id === id) ?? null;
 }
 
-/** 뱃지 장착(id) 또는 해제(null). 가진 뱃지만 장착할 수 있다 */
+/** 배지 장착(id) 또는 해제(null). 가진 배지만 장착할 수 있다 */
 function equipBadge(userId, id) {
   if (id !== null && !badgesOf(userId).some((a) => a.id === id)) return false;
   stmtEquip.run(id, userId);
