@@ -218,6 +218,27 @@ db.exec(`
 `);
 db.exec("CREATE INDEX IF NOT EXISTS idx_dday_guild_date ON dday(guild_id, date);");
 
+// DM 전용 명령어 — 알림(/알림): 시각이 되면 DM으로 보내고 바로 삭제 / 메모(/메모): 본인이 지울 때까지 보관
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reminder (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    message TEXT NOT NULL,
+    due_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  )
+`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_reminder_due ON reminder(due_at);");
+db.exec(`
+  CREATE TABLE IF NOT EXISTS memo (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )
+`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_memo_user ON memo(user_id);");
+
 // 급식 알림 채널 설정 (/급식알림) — 서버당 1개, 채널 ID와 마지막 전송일만 저장
 db.exec(`
   CREATE TABLE IF NOT EXISTS lunch_notice (
@@ -297,6 +318,67 @@ db.exec(`
     UNIQUE (guild_id, url)
   )
 `);
+
+// 낚시 도감 (/낚시도감) — 잡은 물고기 종류별 횟수. 사용자 삭제 시 함께 삭제
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fish_log (
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    fish TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, fish)
+  )
+`);
+
+// 무기 강화 (/무기) — 사용자당 무기 1개. 사용자 삭제 시 함께 삭제
+db.exec(`
+  CREATE TABLE IF NOT EXISTS weapon (
+    user_id TEXT PRIMARY KEY REFERENCES user(user_id) ON DELETE CASCADE,
+    level INTEGER NOT NULL DEFAULT 0,
+    best_level INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL
+  )
+`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_weapon_best ON weapon(best_level DESC);");
+
+// 주식 실현 수익 (/주식 수익) — 매도로 확정된 손익의 누적 합계
+db.exec(`
+  CREATE TABLE IF NOT EXISTS stock_realized (
+    user_id TEXT PRIMARY KEY REFERENCES user(user_id) ON DELETE CASCADE,
+    profit INTEGER NOT NULL DEFAULT 0
+  )
+`);
+
+// 퀘스트·도전과제·뱃지 (/퀘스트, /도전과제, /뱃지, /프로필) — 모두 사용자 삭제 시 함께 삭제
+// 누적 기록(출석·게임 횟수 등)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS stat (
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, key)
+  )
+`);
+// 일일·주간·월간 퀘스트 진행도 (period_key: d:날짜 / w:그 주 월요일 날짜 / m:연-월)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS quest_progress (
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    period_key TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    progress INTEGER NOT NULL DEFAULT 0,
+    claimed INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, period_key, quest_id)
+  )
+`);
+// 보상을 받은 도전과제 (받은 도전과제의 뱃지를 모을 수 있다)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS achievement (
+    user_id TEXT NOT NULL REFERENCES user(user_id) ON DELETE CASCADE,
+    id TEXT NOT NULL,
+    claimed_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, id)
+  )
+`);
+ensureColumn("user", "badge TEXT DEFAULT NULL"); // 프로필에 장착한 뱃지(도전과제 id)
 
 console.log("ℹ️ 마이그레이션 완료");
 

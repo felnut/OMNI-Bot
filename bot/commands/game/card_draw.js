@@ -68,6 +68,7 @@ module.exports = {
 
     stmtUpdateUserMoneyDelta.run(net, interaction.user.id);
     cache.invalidateMoney(interaction.user.id);
+    require("../../managers/progress").record(interaction.user.id, "play");
 
     let title;
     let color;

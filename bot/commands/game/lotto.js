@@ -109,6 +109,7 @@ module.exports = {
       }
       const newMoney = db.prepare("SELECT money FROM user WHERE user_id = ?").get(user.user_id).money;
       cache.invalidateMoney(user.user_id);
+      require("../../managers/progress").record(user.user_id, "lotto");
 
       const resultEmbed = new EmbedBuilder()
         .setTitle("💰 당첨 결과!")

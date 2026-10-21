@@ -59,6 +59,7 @@ module.exports = {
     const net = bet * mult - bet;
     db.prepare("UPDATE user SET money = money + ? WHERE user_id = ?").run(net, user.user_id);
     cache.invalidateMoney(user.user_id);
+    if (bet >= 50) require("../../managers/progress").record(user.user_id, "play");
 
     const choiceText = { red: "🟥 빨강", black: "⬛ 검정", number: `숫자 ${pick}` }[kind];
     const embed = new EmbedBuilder()

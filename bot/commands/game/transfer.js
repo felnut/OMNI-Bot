@@ -100,6 +100,7 @@ module.exports = {
     tx();
 
     cache.invalidateMoney(sender.user_id, target.id);
+    require("../../managers/progress").record(sender.user_id, "transfer");
 
     const embed = new EmbedBuilder()
       .setColor("#3498db")

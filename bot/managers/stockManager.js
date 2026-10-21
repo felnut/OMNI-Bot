@@ -35,6 +35,10 @@ const stmtSelectHoldingShares = db.prepare(
 const stmtUpdateHoldingSharesDelta = db.prepare(
   "UPDATE user_stocks SET shares = shares - ? WHERE user_id = ? AND symbol = ?",
 );
+const stmtAddRealized = db.prepare(
+  "INSERT INTO stock_realized (user_id, profit) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET profit = profit + excluded.profit",
+);
+const stmtSelectRealized = db.prepare("SELECT profit FROM stock_realized WHERE user_id = ?");
 const stmtDeleteHolding = db.prepare(
   "DELETE FROM user_stocks WHERE user_id = ? AND symbol = ?",
 );
@@ -719,7 +723,7 @@ function sellStock(userId, symbol, quantity) {
   if (!isMarketOpen()) throw new Error(MARKET_CLOSED_MSG);
   if (!isOpenTickDone()) throw new Error(OPEN_PENDING_MSG);
   const tx = db.transaction(() => {
-    const holding = stmtSelectHoldingShares.get(userId, symbol);
+    const holding = stmtSelectUserStock.get(userId, symbol);
     if (!holding || holding.shares < quantity)
       throw new Error("보유 주식이 부족합니다.");
 
@@ -733,6 +737,8 @@ function sellStock(userId, symbol, quantity) {
 
     stmtUpdateUserMoneyDelta.run(totalGain, userId);
     stmtUpdateHoldingSharesDelta.run(quantity, userId, symbol);
+    // 매도로 확정된 손익 누적 (/주식 수익)
+    stmtAddRealized.run(userId, totalGain - Math.round(holding.avg_buy_price * quantity));
 
     if (holding.shares - quantity <= 0) {
       stmtDeleteHolding.run(userId, symbol);
@@ -942,6 +948,17 @@ function createMyStocksEmbed(userId, username) {
   return embed;
 }
 
+/** 매도로 확정한 누적 손익 (보유 중인 주식의 평가손익은 포함하지 않는다) */
+function createRealizedEmbed(userId, username) {
+  const realized = stmtSelectRealized.get(userId)?.profit ?? 0;
+  const sign = realized > 0 ? "+" : "";
+  return new EmbedBuilder()
+    .setColor(realized >= 0 ? 0x57f287 : 0xed4245)
+    .setTitle(`💵 ${username}님의 주식 실현 수익`)
+    .setDescription(`매도로 확정한 누적 손익\n# ${realized > 0 ? "🔺" : realized < 0 ? "🔻" : "▬"} ${sign}${realized.toLocaleString()}원`)
+    .setFooter({ text: "보유 중인 주식의 평가손익은 /주식 내주식 에서 확인해요 · 이 기능 추가 전 거래는 포함되지 않아요" });
+}
+
 /** DB에 등록된 종목(이름·심볼) — 슬래시 자동완성용 */
 function getStocksForAutocomplete() {
   return stmtSelectStocksForEmbed.all().map((s) => ({
@@ -1015,5 +1032,6 @@ module.exports = {
   createMyStocksEmbed,
   createStockNewsEmbed,
   createChartEmbed,
+  createRealizedEmbed,
   getStocksForAutocomplete,
 };

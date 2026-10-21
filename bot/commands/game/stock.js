@@ -7,8 +7,9 @@ const {
   createMyStocksEmbed,
   createStockNewsEmbed,
   createChartEmbed,
+  createRealizedEmbed,
   getStocksForAutocomplete,
-} = require("../../managers/stockManager");
+} =require("../../managers/stockManager");
 const db = require("../../../Database");
 const cache = require("../utils/cache");
 
@@ -61,6 +62,9 @@ module.exports = {
       sub.setName("내주식").setDescription("내 자산 확인"),
     )
     .addSubcommand((sub) =>
+      sub.setName("수익").setDescription("매도로 확정한 누적 손익 확인"),
+    )
+    .addSubcommand((sub) =>
       sub.setName("랭킹").setDescription("서버 자산가 순위"),
     )
     .addSubcommand((sub) =>
@@ -99,6 +103,7 @@ module.exports = {
           : sellStock(interaction.user.id, symbol, qty);
 
         cache.invalidateMoney(interaction.user.id);
+        require("../../managers/progress").record(interaction.user.id, "stock");
 
         const portfolioEmbed = createMyStocksEmbed(
           interaction.user.id,
@@ -118,7 +123,10 @@ module.exports = {
       const embed = createMyStocksEmbed(interaction.user.id, interaction.user.username);
       return interaction.reply({ embeds: [embed] });
     }
-    // ====================== 내 주식 ======================
+    if (sub === "수익") {
+      return interaction.reply({ embeds: [createRealizedEmbed(interaction.user.id, interaction.user.username)] });
+    }
+    // ====================== 랭킹 ======================
     if (sub === "랭킹") {
       const users = await cache.getOrSet(
         "leaderboard:stock_value:top10",

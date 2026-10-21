@@ -9,6 +9,7 @@ const {
 } = require("discord.js");
 const db = require("../../../Database.js");
 const { isServerManager } = require("../utils/perm");
+const { SITE_URL } = require("../../config");
 
 const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
 const EPHEMERAL = MessageFlags.Ephemeral;
@@ -71,7 +72,7 @@ module.exports = {
           "• **항목**: 이메일 주소, 서버 ID, 등록자 ID, 동의·수정 시각\n" +
           "• **보유 기간**: 등록 해제(`/관리자 해제`) 또는 동의 철회 시까지\n" +
           "• 제3자에게 제공하지 않으며, 동의하지 않아도 다른 기능은 그대로 쓸 수 있어요(공지 이메일만 받지 못해요).\n" +
-          "• 자세한 내용: https://felnut.github.io/OMNI-Bot/privacy",
+          `• 자세한 내용: ${SITE_URL}/privacy`,
         components: [
           new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("admin_contact:agree").setLabel("동의하고 등록").setStyle(ButtonStyle.Success),

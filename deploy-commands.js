@@ -1,5 +1,5 @@
 require("dotenv").config({ path: ".env", override: true });
-const { REST, Routes } = require("discord.js");
+const { REST, Routes, InteractionContextType } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -70,7 +70,8 @@ function validateAndSanitizeEnv({ autoFix = true } = {}) {
 }
 
 // ================== 로컬 명령어 파일 읽기 및 데이터 수집 ==================
-const commands = [];
+const commands = []; // 서버 명령어
+const dmCommands = []; // DM 전용 명령어
 const foldersPath = path.join(__dirname, "bot/commands");
 const commandFolders = fs.readdirSync(foldersPath);
 
@@ -86,7 +87,10 @@ for (const folder of commandFolders) {
     const command = require(filePath);
     // data와 execute 속성이 모두 존재하는 파일만 정상적인 명령어로 취급
     if ("data" in command && "execute" in command) {
-      commands.push(command.data.toJSON());
+      const json = command.data.toJSON();
+      // DM 전용(봇과의 1:1 대화에서만 쓰는) 명령어는 서버가 아니라 전역으로 등록해야 DM에 나타난다
+      const dmOnly = Array.isArray(json.contexts) && json.contexts.length > 0 && json.contexts.every((c) => c === InteractionContextType.BotDM);
+      (dmOnly ? dmCommands : commands).push(json);
     }
   }
 }
@@ -123,7 +127,16 @@ async function deployCommands() {
         if (e?.status === 401) throw e; // 토큰 문제는 바로 중단
       }
     }
-    if (failed === targets.size) return false;
+    // 전역 명령어는 DM 전용 명령어만 담는다 (서버 명령어는 위처럼 서버별로 등록)
+    try {
+      await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: dmCommands });
+      console.log(`  ✅ DM 전용 명령어 ${dmCommands.length}개 (전역 등록 — 디스코드에 반영되기까지 잠시 걸릴 수 있어요)`);
+    } catch (e) {
+      failed += 1;
+      console.error(`  ❌ DM 전용 명령어: ${e?.message || e}`);
+    }
+
+    if (failed === targets.size + 1) return false;
     console.log(failed ? `⚠️ 일부 서버(${failed}곳)는 등록에 실패했어요.` : "✅ 명령어 등록 성공!");
     return true; // 성공 반환
   } catch (error) {

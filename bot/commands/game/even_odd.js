@@ -65,6 +65,7 @@ module.exports = {
     );
 
     cache.invalidateMoney(user.user_id);
+    if (bet >= 50) require("../../managers/progress").record(user.user_id, "play");
 
     // 최종 잔액 표시
     const newBalance = newMoney;

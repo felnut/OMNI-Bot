@@ -77,6 +77,7 @@ module.exports = {
     ).run(newMoney, todayResetTimeSec, newStreak, userId);
 
     cache.invalidateMoney(userId);
+    require("../../managers/progress").record(userId, "attend");
 
     // 출석 완료 임베드
     const embed = new EmbedBuilder()

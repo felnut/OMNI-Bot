@@ -146,6 +146,9 @@ client.once(Events.ClientReady, (c) => {
   // 급식 알림 (설정한 서버에 평일 07:30)
   require("./bot/managers/lunchNotice").startLunchNotice(client);
 
+  // DM 알림 (/알림): 시각이 된 알림을 DM으로 보낸다
+  require("./bot/managers/reminders").startReminders(client);
+
   // 개인정보 보유 기간 정리 (12개월 미이용 계정, 오래된 로그)
   require("./bot/managers/maintenance").startMaintenance();
 

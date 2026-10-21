@@ -61,6 +61,10 @@ function runMaintenance() {
     db.prepare("DELETE FROM warning WHERE created_at < ?").run(now - require("./moderation").WARNING_KEEP_MS);
     // 날짜가 지난 지 30일이 넘은 D-day 삭제
     db.prepare("DELETE FROM dday WHERE date < ?").run(new Date(now + 9 * 3600e3 - 30 * 86400e3).toISOString().slice(0, 10));
+    // DM 메모·알림은 만든 지 12개월이 지나면 삭제 (이용자 등록 여부와 관계없이 쌓이므로 따로 정리)
+    db.prepare("DELETE FROM memo WHERE created_at < ?").run(now - INACTIVE_MS);
+    db.prepare("DELETE FROM reminder WHERE created_at < ?").run(now - INACTIVE_MS);
+    require("./progress").purgeOldQuests(now); // 지난 퀘스트 진행도 (60일 보관)
     const users = purgeInactiveUsers(now);
     const logs = purgeOldLogs(now);
     if (users || logs) console.log(`🧹 정리: 12개월 미이용 ${users}명, 오래된 로그 ${logs}개 삭제`);
